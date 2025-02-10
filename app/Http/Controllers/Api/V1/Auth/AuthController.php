@@ -49,6 +49,7 @@ class AuthController extends Controller
         }
 
         $user = JWTAuth::user();
+       $user->load('roles'); // Eager-load the roles
 
         return response()->json([
             'token' => $token,

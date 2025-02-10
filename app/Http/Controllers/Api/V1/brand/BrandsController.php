@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Brand;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\BrandRequest;
+use App\Models\Brand;
+use Illuminate\Http\Request;
+
+class BrandsController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $brands = Brand::paginate();
+
+        if ($brands->isEmpty()) {
+            return response()->json(['message' => 'No brands found'], 404);
+        }
+
+        return response()->json($brands);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(BrandRequest $request)
+    {
+        try {
+            $brand = Brand::create($request->validated());
+
+            return response()->json([
+                'message' => 'Brand created successfully',
+                'brand' => $brand,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to create brand'], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Brand $brand)
+    {
+
+        if (!$brand) {
+            return response()->json(['message' => 'Brand not found'], 404);
+        }
+
+        return response()->json(['brand' => $brand]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(BrandRequest $request, Brand $brand)
+    {
+        try {
+            $brand->update($request->validated());
+
+            return response()->json([
+                'message' => 'Brand updated successfully',
+                'brand' => $brand,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to update brand'], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Brand $brand)
+{
+    try {
+        // Attempt to delete the brand
+        $brand->delete();
+
+        // Return success response
+        return response()->json(['message' => 'Brand deleted successfully'], 200);
+    } catch (\Illuminate\Database\QueryException $e) {
+        // Handle database-specific errors (e.g., foreign key constraints)
+        return response()->json(['message' => 'Failed to delete brand due to database constraints'], 422);
+    } catch (\Exception $e) {
+        // Handle all other exceptions
+        return response()->json(['message' => 'Failed to delete brand'], 500);
+    }
+}
+}

@@ -13,6 +13,26 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+
+    public function roles(){
+        return $this->belongsToMany(Role::class);
+    }
+
+        // Check if the user has a specific role
+
+    public function hasRole($role)
+{
+    return $this->roles()->where('name', $role)->exists();
+}
+
+public function permissions()
+{
+    return $this->roles()->permissions(); // Access permissions via roles
+}
+
+
+
+
     /**
      * The attributes that are mass assignable.
      *
