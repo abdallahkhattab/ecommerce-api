@@ -20,5 +20,8 @@ class CheckRole
        if (!$user || !$user->hasAnyRole($roles)) {
         return response()->json(['error' => 'Unauthorized'], 403);
     }
+            // Allow the request to proceed if the user is authorized
+            return $next($request);
+
     }
 }

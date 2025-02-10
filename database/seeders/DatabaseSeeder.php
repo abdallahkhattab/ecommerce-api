@@ -21,7 +21,9 @@ class DatabaseSeeder extends Seeder
         //$this->call(BrandSeeder::class);
       //  $this->call(RoleSeeder::class);
                 // Seed role-user relationships
-                $this->call(RoleUserSeeder::class);
+                //$this->call(RoleUserSeeder::class);
+
+         $this->call(CategorySeeder::class);
 
 
     }

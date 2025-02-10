@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Brand\BrandsController;
+use App\Http\Controllers\Api\V1\Category\CategoriesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,8 @@ Route::middleware('auth:api')->group(function(){
 
 Route::middleware(['auth:api', 'role:admin,editor'])->group(function () {
     Route::apiResource('brands',BrandsController::class);
+    Route::apiResource('categories',CategoriesController::class);
+
 });
 
 
