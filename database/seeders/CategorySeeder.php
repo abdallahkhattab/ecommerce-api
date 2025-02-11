@@ -15,6 +15,9 @@ class CategorySeeder extends Seeder
     {
         //
 
+        Category::factory()->count(10)->create();
+
+/*
         $categories = [
             ['name' => 'Electronics', 'slug'=> 'electronics', 'description' => 'All electronic gadgets'],
             ['name' => 'Clothing','slug'=> 'clothing', 'description' => 'Apparel and fashion items'],
@@ -24,6 +27,6 @@ class CategorySeeder extends Seeder
         foreach ($categories as $category) {
             Category::create($category);
         }
-
+*/
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Brand;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BrandRequest;
+use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,7 @@ class BrandsController extends Controller
             return response()->json(['message' => 'No brands found'], 404);
         }
 
-        return response()->json($brands);
+        return BrandResource::collection($brands);
     }
 
     /**
@@ -29,11 +30,11 @@ class BrandsController extends Controller
     public function store(BrandRequest $request)
     {
         try {
-            $brand = Brand::create($request->validated());
+        $brand = Brand::create($request->validated());
 
             return response()->json([
                 'message' => 'Brand created successfully',
-                'brand' => $brand,
+                'brand' => new BrandResource($brand),
             ], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create brand'], 500);
@@ -45,12 +46,15 @@ class BrandsController extends Controller
      */
     public function show(Brand $brand)
     {
-
-        if (!$brand) {
+        // 1️⃣ $brand is already resolved via Route Model Binding
+        /*
+        If the brand is not found, Laravel automatically returns a 404 Not Found error.        
+        */ 
+       /* if (!$brand) {
             return response()->json(['message' => 'Brand not found'], 404);
-        }
+        }*/
 
-        return response()->json(['brand' => $brand]);
+        return response()->json(['brand' => new BrandResource($brand)]);
     }
 
     /**
@@ -63,7 +67,7 @@ class BrandsController extends Controller
 
             return response()->json([
                 'message' => 'Brand updated successfully',
-                'brand' => $brand,
+                'brand' => new BrandResource($brand),
             ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to update brand'], 500);
@@ -78,7 +82,6 @@ class BrandsController extends Controller
     try {
         // Attempt to delete the brand
         $brand->delete();
-
         // Return success response
         return response()->json(['message' => 'Brand deleted successfully'], 200);
     } catch (\Illuminate\Database\QueryException $e) {

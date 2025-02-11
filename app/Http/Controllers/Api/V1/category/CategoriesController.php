@@ -1,12 +1,14 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1\Category;
-
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class CategoriesController extends Controller
 {
@@ -15,7 +17,8 @@ class CategoriesController extends Controller
      */
     public function index()
     {
-        $categories = Category::paginate(10); // Paginate with 10 items per page
+       
+        $categories = Category::paginate(10); 
         return CategoryResource::collection($categories);
     }
 
@@ -25,29 +28,21 @@ class CategoriesController extends Controller
     public function store(CategoryRequest $request)
     {
         try {
-            // Create the category
-           // $data = $request->validated();
-           // $data['slug'] = Str::slug($data['name']); // Generate the slug from the name
-    
             $category = Category::create($request->validated());
 
-            // Handle image upload if provided
-
             if ($request->hasFile('image')) {
-                $imagePath = $this->uploadImage($request->file('image'));
-                $category->update(['image' => $imagePath]); // Save the image path
+                $imagePath = $this->handleImageUpload($request->file('image'));
+                $category->update(['image' => $imagePath]);
             }
 
-            // Return success response with the created category
             return response()->json([
                 'message' => 'Category created successfully',
                 'category' => new CategoryResource($category),
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error creating category',
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['message' => 'Error creating category', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -56,7 +51,6 @@ class CategoriesController extends Controller
      */
     public function show(Category $category)
     {
-        // Route model binding ensures $category is already resolved
         return response()->json([
             'message' => 'Category retrieved successfully',
             'category' => new CategoryResource($category),
@@ -69,25 +63,28 @@ class CategoriesController extends Controller
     public function update(CategoryRequest $request, Category $category)
     {
         try {
-            // Update the category
             $category->update($request->validated());
 
-            // Handle image update if provided
             if ($request->hasFile('image')) {
-                $imagePath = $this->uploadImage($request->file('image'));
-                $category->update(['image' => $imagePath]); // Save the updated image path
+                // Delete old image if exists
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image);
+                }
+
+                $imagePath = $this->handleImageUpload($request->file('image'));
+                $category->update(['image' => $imagePath]);
             }
 
-            // Return success response with the updated category
             return response()->json([
                 'message' => 'Category updated successfully',
                 'category' => new CategoryResource($category),
             ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Category not found'], 404);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error updating category',
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['message' => 'Error updating category', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -97,36 +94,26 @@ class CategoriesController extends Controller
     public function destroy(Category $category)
     {
         try {
-            // Delete the category
+            // Delete associated image
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+
             $category->delete();
 
-            // Return success response
-            return response()->json([
-                'message' => 'Category deleted successfully',
-            ]);
+            return response()->json(['message' => 'Category deleted successfully']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Category not found'], 404);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error deleting category',
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['message' => 'Error deleting category', 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Upload an image and return its path.
+     * Handle image upload and return file path.
      */
-    protected function uploadImage($file)
+    protected function handleImageUpload($file)
     {
-        // Define the upload path
-        $path = 'images/categories';
-
-        // Generate a unique filename
-        $filename = time() . '_' . $file->getClientOriginalName();
-
-        // Move the uploaded file to the storage directory
-        $file->storeAs($path, $filename);
-
-        // Return the full path to the image
-        return $path . '/' . $filename;
+        return $file->store('images/categories', 'public');
     }
 }
