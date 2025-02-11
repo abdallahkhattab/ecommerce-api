@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1\Product;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ProductsController extends Controller
@@ -15,9 +15,52 @@ class ProductsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    /**
+         * Admin : Can see all products, regardless of availability or ownership.
+        *  Seller : Can only see and manage their own products.
+        *  Regular User : Can only see products where is_available = true.
+        * 
+        */
+    public function index(Request $request)
     {
-        $products = Product::with(['brand', 'category']); // Eager-load relationships
+
+        
+        // Get the authenticated user
+        $user = Auth::user();
+
+        // Define a base query
+        $query = Product::with(['brand', 'category']); // Eager-load relationships
+
+        // Apply role-based filters
+        if ($user && !$user->hasRole('admin')) {
+            if ($user->hasRole('seller')) {
+                // Sellers can only see their own products
+                $query = $query->where('user_id', $user->id);
+            } else {
+                // Non-sellers (users without roles) can only see available products
+                $query = $query->where('is_available', true);
+            }
+        }
+
+        // Apply price range filter (if provided)
+        if ($request->filled('priceFrom')) {
+            $query = $query->where('price', '>=', $request->input('priceFrom'));
+        }
+
+        if ($request->filled('priceTo')) {
+            $query = $query->where('price', '<=', $request->input('priceTo'));
+        }
+
+        // Apply sorting (default to ascending order by price)
+        $sortOrder = $request->input('sort', 'asc'); // Default to 'asc'
+        if (in_array($sortOrder, ['asc', 'desc'])) {
+            $query = $query->orderBy('price', $sortOrder);
+        } else {
+            $query = $query->orderBy('price', 'asc'); // Fallback to ascending order
+        }
+
+        // Paginate the results
+        $products = $query->paginate(10);
 
         if ($products->isEmpty()) {
             return response()->json(['message' => 'No products found'], 404);
@@ -32,8 +75,11 @@ class ProductsController extends Controller
     public function store(ProductRequest $request)
     {
         try {
-            // Create the product
-            $product = Product::create($request->validated());
+            // Create the product with the authenticated user's ID
+            $productData = $request->validated();
+            $productData['user_id'] = Auth::id(); // Set the user_id to the authenticated user
+
+            $product = Product::create($productData);
 
             // Handle image upload if provided
             if ($request->hasFile('image')) {
@@ -58,8 +104,17 @@ class ProductsController extends Controller
      */
     public function show(Product $product)
     {
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+        // Ensure the user can view the product based on their role
+        $user = Auth::user();
+
+        if ($user && !$user->hasRole('admin')) {
+            if ($user->hasRole('seller') && $product->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            if (!$user->hasRole('seller') && !$product->is_available) {
+                return response()->json(['message' => 'Product not available'], 403);
+            }
         }
 
         return new ProductResource($product); // Return formatted resource
@@ -71,6 +126,13 @@ class ProductsController extends Controller
     public function update(ProductRequest $request, Product $product)
     {
         try {
+            // Ensure the seller can only update their own products
+            $user = Auth::user();
+
+            if ($user && !$user->hasRole('admin') && $product->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
             // Update the product
             $product->update($request->validated());
 
@@ -101,12 +163,19 @@ class ProductsController extends Controller
     public function destroy(Product $product)
     {
         try {
+            // Ensure the seller can only delete their own products
+            $user = Auth::user();
+
+            if ($user && !$user->hasRole('admin') && $product->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
             // Delete the associated image (if any)
             if ($product->image) {
                 Storage::delete('public/products/' . $product->image);
             }
 
-            // Delete the product
+            // Soft delete the product
             $product->delete();
 
             return response()->json(['message' => 'Product deleted successfully'], 200);
@@ -118,26 +187,60 @@ class ProductsController extends Controller
         }
     }
 
-
-    public function deletedProduct(){
+    /**
+     * List all soft-deleted products for the seller.
+     */
+    public function deletedProduct()
+    {
         $user = Auth::user();
-        $products = Product::where('user_id',$user->id)->onlytrashed();
-        $products = Product::onlyTrashed()->get();
-        return response()->json(['message'=> 'deleted proudcts',$products],200);
+
+        // Only sellers can view their soft-deleted products
+        if ($user && !$user->hasRole('seller')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $products = Product::onlyTrashed()
+            ->where('user_id', $user->id)
+            ->get();
+
+        return response()->json([
+            'message' => 'Deleted products retrieved successfully',
+            'products' => ProductResource::collection($products),
+        ], 200);
     }
 
-    public function forcDelete(Product $product){
+    /**
+     * Permanently delete a soft-deleted product.
+     */
+    public function forcDelete(Product $product)
+    {
         $user = Auth::user();
-        $product->where('user_id',$user->id)->forceDelete();
-        return response()->json(['message'=>'product deleted permanent'],200);
+
+        // Only sellers can permanently delete their own products
+        if ($user && !$user->hasRole('seller') || $product->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $product->forceDelete();
+
+        return response()->json(['message' => 'Product permanently deleted'], 200);
     }
 
-
-    public function restoreProduct(Product $product){
+    /**
+     * Restore a soft-deleted product.
+     */
+    public function restoreProduct(Product $product)
+    {
         $user = Auth::user();
-        $product->where('user_id',$user->id)->restore();
+
+        // Only sellers can restore their own products
+        if ($user && !$user->hasRole('seller') || $product->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $product->restore();
+
         return response()->json(['message' => 'Product restored successfully'], 200);
-
     }
 
     /**

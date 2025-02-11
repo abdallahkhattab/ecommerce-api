@@ -18,7 +18,7 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(Role::class);
     }
 
-        // Check if the user has a specific role
+// Check if the user has a specific role
 
     public function hasRole($role)
 {
