@@ -41,6 +41,10 @@ public function permissions()
     return $this->roles()->permissions(); // Access permissions via roles
 }
 
+public function products(){
+    return $this->hasMany(Product::class);
+}
+
 
 
 

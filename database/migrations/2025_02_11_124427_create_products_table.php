@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->references('id')->on('users')->nullable();
             $table->foreignId('brand_id')->constrained()->onDelete('cascade'); // Relationship with Brand
             $table->foreignId('category_id')->constrained()->onDelete('cascade'); // Relationship with Category                
             $table->string('name');
