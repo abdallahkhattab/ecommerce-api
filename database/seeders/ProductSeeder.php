@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Brand;
 use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
@@ -13,33 +15,19 @@ class ProductSeeder extends Seeder
      */
     public function run()
     {
-        $products = [
-            [
-                'brand_id' => 1,
-                'category_id' => 1,
-                'name' => 'Laptop',
-                'slug' => 'laptop',
-                'description' => 'A high-performance laptop',
-                'price' => 999.99,
-                'discount' => 0.00,
-                'image' => 'images/products/laptop.jpg',
-                'quantity' => 50,
-            ],
-            [
-                'brand_id' => 2,
-                'category_id' => 2,
-                'name' => 'Smartphone',
-                'slug' => 'smartphone',
-                'description' => 'A modern smartphone',
-                'price' => 499.99,
-                'discount' => 50.00,
-                'image' => 'images/products/smartphone.jpg',
-                'quantity' => 100,
-            ],
-        ];
-
-        foreach ($products as $product) {
-            Product::create($product);
+        // Check if brands and categories exist
+        if (Brand::count() === 0) {
+            $this->command->info('Seeding brands...');
+            Brand::factory()->count(5)->create(); // Seed 5 brands if none exist
         }
+
+        if (Category::count() === 0) {
+            $this->command->info('Seeding categories...');
+            Category::factory()->count(10)->create(); // Seed 10 categories if none exist
+        }
+
+        // Seed 50 fake products
+        $this->command->info('Seeding products...');
+        Product::factory()->count(50)->create();
     }
 }

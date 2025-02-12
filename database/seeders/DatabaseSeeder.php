@@ -18,12 +18,21 @@ class DatabaseSeeder extends Seeder
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
-        $this->call(BrandSeeder::class);
+        //$this->call(BrandSeeder::class);
       //  $this->call(RoleSeeder::class);
                 // Seed role-user relationships
                 //$this->call(RoleUserSeeder::class);
 
         // $this->call(CategorySeeder::class);
+
+        $this->call([
+         //   RoleSeeder::class, // Seed roles (admin, editor, seller)
+         //   UserSeeder::class, // Seed users with roles
+          //  BrandSeeder::class, // Seed brands
+        //    CategorySeeder::class, // Seed categories
+            ProductSeeder::class, // Seed products
+        ]);
+
 
 
     }

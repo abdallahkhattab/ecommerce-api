@@ -25,6 +25,12 @@ class User extends Authenticatable implements JWTSubject
     return $this->roles()->where('name', $role)->exists();
 }
 
+public function isAdminOrOwner($model): bool
+{
+    return $this->hasRole('admin') || $this->id === $model->user_id;
+}
+
+
  // Check if the user has any of the specified roles
  public function hasAnyRole(array $roles)
  {

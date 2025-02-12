@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Product;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Services\ImageService;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ProductRequest;
@@ -16,59 +17,75 @@ class ProductsController extends Controller
      * Display a listing of the resource.
      */
     /**
-         * Admin : Can see all products, regardless of availability or ownership.
+        * Admin : Can see all products, regardless of availability or ownership.
         *  Seller : Can only see and manage their own products.
         *  Regular User : Can only see products where is_available = true.
         * 
         */
-    public function index(Request $request)
-    {
 
+        protected $imageService;
+
+        public function __construct(ImageService $imageService)
+        {
+            $this->imageService = $imageService;
+            
+        }
+
+        public function guestUserProducts(){
+            $products = Product::where('is_available',true)->paginate();
+            return ProductResource::collection($products);
+        }
+
+        public function index(Request $request)
+        {
+            // Get the authenticated user (if any)
+            $user = Auth::user();
         
-        // Get the authenticated user
-        $user = Auth::user();
-
-        // Define a base query
-        $query = Product::with(['brand', 'category']); // Eager-load relationships
-
-        // Apply role-based filters
-        if ($user && !$user->hasRole('admin')) {
-            if ($user->hasRole('seller')) {
-                // Sellers can only see their own products
-                $query = $query->where('user_id', $user->id);
+            // Start the query with eager loading
+            $query = Product::with(['brand', 'category']); 
+        
+            // Apply filters based on user role
+            if ($user) {
+                if ($user->hasRole('admin')) {
+                    // Admin sees all products (no filtering needed)
+                } elseif ($user->hasAnyRole(['seller', 'editor'])) {
+                    // Seller & Editor see only their own products
+                    $query->where('user_id', $user->id);
+                } else {
+                    // Normal authenticated users see only available products
+                    $query->where('is_available', true);
+                }
             } else {
-                // Non-sellers (users without roles) can only see available products
-                $query = $query->where('is_available', true);
+                // Guests see only available products
+                $query->where('is_available', true);
             }
+        
+            // Apply optional filters (price range)
+            if ($request->filled('priceFrom')) {
+                $query->where('price', '>=', $request->input('priceFrom'));
+            }
+            if ($request->filled('priceTo')) {
+                $query->where('price', '<=', $request->input('priceTo'));
+            }
+        
+            // Sorting (default: ascending price)
+            $sortOrder = $request->input('sort', 'asc');
+            if (in_array($sortOrder, ['asc', 'desc'])) {
+                $query->orderBy('price', $sortOrder);
+            } else {
+                $query->orderBy('price', 'asc'); 
+            }
+        
+            // Paginate the results
+            $products = $query->paginate(10);
+        
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+        
+            return ProductResource::collection($products);
         }
-
-        // Apply price range filter (if provided)
-        if ($request->filled('priceFrom')) {
-            $query = $query->where('price', '>=', $request->input('priceFrom'));
-        }
-
-        if ($request->filled('priceTo')) {
-            $query = $query->where('price', '<=', $request->input('priceTo'));
-        }
-
-        // Apply sorting (default to ascending order by price)
-        $sortOrder = $request->input('sort', 'asc'); // Default to 'asc'
-        if (in_array($sortOrder, ['asc', 'desc'])) {
-            $query = $query->orderBy('price', $sortOrder);
-        } else {
-            $query = $query->orderBy('price', 'asc'); // Fallback to ascending order
-        }
-
-        // Paginate the results
-        $products = $query->paginate(10);
-
-        if ($products->isEmpty()) {
-            return response()->json(['message' => 'No products found'], 404);
-        }
-
-        return ProductResource::collection($products); // Return formatted collection
-    }
-
+                
     /**
      * Store a newly created resource in storage.
      */
@@ -83,7 +100,7 @@ class ProductsController extends Controller
 
             // Handle image upload if provided
             if ($request->hasFile('image')) {
-                $product->image = $this->uploadImage($request->file('image'));
+                $product->image = $this->imageService->uploadImage($request->file('image'));
                 $product->save(); // Save the updated image path
             }
 
@@ -122,6 +139,10 @@ class ProductsController extends Controller
 
     /**
      * Update the specified resource in storage.
+     * Admin Users:
+    *If a user has the role admin, they can update any product.
+    *The Product Owner:
+    *If the user is not an admin but owns the product ($product->user_id === $user->id), they are allowed to update it.
      */
     public function update(ProductRequest $request, Product $product)
     {
@@ -129,7 +150,7 @@ class ProductsController extends Controller
             // Ensure the seller can only update their own products
             $user = Auth::user();
 
-            if ($user && !$user->hasRole('admin') && $product->user_id !== $user->id) {
+            if ($user && !$user->hasRole(['admin','editor']) && $product->user_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -141,7 +162,7 @@ class ProductsController extends Controller
                 if ($product->image) {
                     Storage::delete('public/products/' . $product->image); // Delete old image
                 }
-                $product->image = $this->uploadImage($request->file('image'));
+                $product->image = $this->imageService->uploadImage($request->file('image'));
                 $product->save(); // Save the updated image path
             }
 
@@ -190,7 +211,7 @@ class ProductsController extends Controller
     /**
      * List all soft-deleted products for the seller.
      */
-    public function deletedProduct()
+    public function deletedProducts()
     {
         $user = Auth::user();
 
@@ -212,7 +233,7 @@ class ProductsController extends Controller
     /**
      * Permanently delete a soft-deleted product.
      */
-    public function forcDelete(Product $product)
+    public function forceDelete(Product $product)
     {
         $user = Auth::user();
 
@@ -243,14 +264,5 @@ class ProductsController extends Controller
         return response()->json(['message' => 'Product restored successfully'], 200);
     }
 
-    /**
-     * Upload an image and return its path.
-     */
-    protected function uploadImage($file)
-    {
-        $imageName = time() . '.' . $file->getClientOriginalExtension();
-        $file->storeAs('public/products', $imageName);
-
-        return 'products/' . $imageName; // Return relative path for database storage
-    }
+   
 }

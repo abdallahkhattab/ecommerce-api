@@ -22,8 +22,11 @@ use Illuminate\Support\Facades\Route;
 // Public Routes (No Authentication Required)
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
-Route::get('products', [ProductsController::class, 'index']); // Public access to product listing
-Route::get('products/{id}', [ProductsController::class, 'show']); // Public access to view a single product
+Route::prefix('front')->group(function(){
+    Route::get('products', [ProductsController::class, 'guestUserProducts']); // Public access to product listing
+    Route::get('products/{product}', [ProductsController::class, 'show']); // Public access to view a single product
+    
+});
 
 // Protected User Routes
 Route::middleware('auth:api')->group(function () {
@@ -41,12 +44,19 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
     Route::apiResource('categories', CategoriesController::class);
     
     // Product management is restricted, except for index & show
+    Route::get('products', [ProductsController::class, 'index']); // Create product
     Route::post('products', [ProductsController::class, 'store']); // Create product
-    Route::put('products/{id}', [ProductsController::class, 'update']); // Update product
-    Route::delete('products/{id}', [ProductsController::class, 'destroy']); // Delete product
+    Route::put('products/{product}', [ProductsController::class, 'update']); // Update product
+    Route::delete('products/{product}', [ProductsController::class, 'destroy']); // Delete product
 
-    // Soft delete & restore actions
-    Route::get('products/{id}/deleted', [ProductsController::class, 'deletedProduct']);
-    Route::get('products/{id}/restore', [ProductsController::class, 'restoreProduct']);
-    Route::delete('products/{id}/force', [ProductsController::class, 'forceDelete']);
 });
+
+// Soft delete & restore actions
+Route::prefix('products')->group(function () {
+    Route::get('{product}/deleted', [ProductsController::class, 'deletedProducts']);
+    Route::patch('{product}/restore', [ProductsController::class, 'restoreProduct']);
+    Route::delete('{product}/force', [ProductsController::class, 'forceDelete']);
+});
+
+
+

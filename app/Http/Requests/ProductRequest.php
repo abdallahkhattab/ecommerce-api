@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ProductRequest extends FormRequest
 {
@@ -24,7 +25,8 @@ class ProductRequest extends FormRequest
         return [
 
             'name' => 'required|string|max:255',
-           // 'slug' => 'required|string|max:255|unique:products,slug',
+            'user_id' => 'required',
+            // 'slug' => 'required|string|max:255|unique:products,slug',
             'brand_id' => 'required|exists:brands,id',
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
