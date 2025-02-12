@@ -47,4 +47,35 @@ class Product extends Model
         $this->attributes['slug'] = Str::slug($value);
     }
 
+    public function scopeFilterByRole($query, $user)
+    {
+        if ($user) {
+            if ($user->hasRole('admin')) {
+                return $query; // Admin sees all products
+            } elseif ($user->hasAnyRole(['seller', 'editor'])) {
+                return $query->where('user_id', $user->id); // Seller & Editor see their own products
+            } else {
+                return $query->where('is_available', true); // Regular users see available products
+            }
+        }
+        return $query->where('is_available', true); // Guests see available products
+    }
+    
+    public function scopeFilterByPrice($query, $priceFrom = null, $priceTo = null)
+    {
+        if (!is_null($priceFrom)) {
+            $query->where('price', '>=', $priceFrom);
+        }
+        if (!is_null($priceTo)) {
+            $query->where('price', '<=', $priceTo);
+        }
+        return $query;
+    }
+    
+    public function scopeSortByPrice($query, $sortOrder = 'asc')
+    {
+        return $query->orderBy('price', in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'asc');
+    }
+    
+
 }

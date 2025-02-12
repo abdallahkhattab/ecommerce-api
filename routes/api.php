@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 // Public Routes (No Authentication Required)
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+
 Route::prefix('front')->group(function(){
     Route::get('products', [ProductsController::class, 'guestUserProducts']); // Public access to product listing
     Route::get('products/{product}', [ProductsController::class, 'show']); // Public access to view a single product
@@ -52,9 +53,9 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
 });
 
 // Soft delete & restore actions
-Route::prefix('products')->group(function () {
-    Route::get('{product}/deleted', [ProductsController::class, 'deletedProducts']);
-    Route::patch('{product}/restore', [ProductsController::class, 'restoreProduct']);
+Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')->group(function () {
+    Route::get('deleted', [ProductsController::class, 'deletedProducts']);
+    Route::patch('{id}/restore', [ProductsController::class, 'restoreProduct']);
     Route::delete('{product}/force', [ProductsController::class, 'forceDelete']);
 });
 
