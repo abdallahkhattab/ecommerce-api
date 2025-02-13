@@ -11,6 +11,8 @@ use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Storage;
 
+
+
 class ProductsController extends Controller
 {
     /**
@@ -23,6 +25,7 @@ class ProductsController extends Controller
      * 
      */
 
+
     protected $imageService;
 
     public function __construct(ImageService $imageService)
@@ -30,12 +33,17 @@ class ProductsController extends Controller
         $this->imageService = $imageService;
     }
 
-    public function guestUserProducts()
+  
+    public function guestUserProducts(Request $request)
     {
-        $products = Product::where('is_available', true)->paginate();
+        $products = Product::with(['brand', 'category'])->where('is_available', true)
+        ->filterByPrice($request->priceFrom, $request->priceTo)
+        ->sortByPrice($request->sort)
+        ->paginate(10);
         return ProductResource::collection($products);
     }
 
+    
     public function index(Request $request)
     {
         // Get the authenticated user (if any)
@@ -208,6 +216,10 @@ class ProductsController extends Controller
         // Only sellers can permanently delete their own products
         if ($product->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        // Delete the associated image (if any)
+        if ($product->image) {
+            Storage::delete('public/products/' . $product->image);
         }
 
         $product->forceDelete();

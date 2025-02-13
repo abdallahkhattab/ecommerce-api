@@ -56,7 +56,7 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
 Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')->group(function () {
     Route::get('deleted', [ProductsController::class, 'deletedProducts']);
     Route::patch('{id}/restore', [ProductsController::class, 'restoreProduct']);
-    Route::delete('{product}/force', [ProductsController::class, 'forceDelete']);
+    Route::delete('{id}/force', [ProductsController::class, 'forceDelete']);
 });
 
 

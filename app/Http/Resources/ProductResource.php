@@ -6,6 +6,24 @@ use Illuminate\Http\Request;
 use App\Http\Resources\BrandResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @OA\Schema(
+ *     schema="Product",
+ *     type="object",
+ *     title="Product",
+ *     description="Product model representation",
+ *     properties={
+ *         @OA\Property(property="id", type="integer", example=1),
+ *         @OA\Property(property="name", type="string", example="Laptop"),
+ *         @OA\Property(property="price", type="number", format="float", example=799.99),
+ *         @OA\Property(property="is_available", type="boolean", example=true),
+ *         @OA\Property(property="brand", type="object", ref="#/components/schemas/Brand"),
+ *         @OA\Property(property="category", type="object", ref="#/components/schemas/Category"),
+ *         @OA\Property(property="created_at", type="string", format="date-time"),
+ *         @OA\Property(property="updated_at", type="string", format="date-time")
+ *     }
+ * )
+ */
 class ProductResource extends JsonResource
 {
     /**
@@ -13,6 +31,9 @@ class ProductResource extends JsonResource
      *
      * @return array<string, mixed>
      */
+    
+ 
+
     public function toArray(Request $request): array
     {
         return [
