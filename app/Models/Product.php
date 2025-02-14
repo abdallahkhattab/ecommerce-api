@@ -26,6 +26,12 @@ class Product extends Model
         'quantity',
     ];
 
+    public function favoritedByUsers()
+{
+    return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
+}
+
+
     // Relationship with Brand
     public function brand()
     {

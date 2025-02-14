@@ -13,6 +13,11 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public function favorites()
+{
+    return $this->belongsToMany(Product::class, 'favorites')->withTimestamps();
+}
+
 
     public function roles(){
         return $this->belongsToMany(Role::class);
@@ -25,10 +30,7 @@ class User extends Authenticatable implements JWTSubject
     return $this->roles()->where('name', $role)->exists();
 }
 
-public function isAdminOrOwner($model): bool
-{
-    return $this->hasRole('admin') || $this->id === $model->user_id;
-}
+
 
 
  // Check if the user has any of the specified roles
@@ -50,9 +52,6 @@ public function permissions()
 public function products(){
     return $this->hasMany(Product::class);
 }
-
-
-
 
     /**
      * The attributes that are mass assignable.

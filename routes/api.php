@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Brand\BrandsController;
+use App\Http\Controllers\Api\V1\Product\FavoriteController;
 use App\Http\Controllers\Api\V1\Product\ProductsController;
 use App\Http\Controllers\Api\V1\Location\LocationsController;
 use App\Http\Controllers\Api\V1\Category\CategoriesController;
@@ -72,6 +73,15 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')-
     Route::patch('{id}/restore', [ProductsController::class, 'restoreProduct']);
     Route::delete('{id}/force', [ProductsController::class, 'forceDelete']);
 });
+
+
+//favorite product
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('favorites/{productId}', [FavoriteController::class, 'addToFavorites']);
+    Route::delete('favorites/{productId}', [FavoriteController::class, 'removeFromFavorites']);
+    Route::get('favorites', [FavoriteController::class, 'getFavorites']);
+});
+
 
 
 
