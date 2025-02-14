@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Auth\AuthController;
-use App\Http\Controllers\Api\V1\Brand\BrandsController;
-use App\Http\Controllers\Api\V1\Category\CategoriesController;
-use App\Http\Controllers\Api\V1\Location\LocationsController;
-use App\Http\Controllers\Api\V1\Product\ProductsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Brand\BrandsController;
+use App\Http\Controllers\Api\V1\Product\ProductsController;
+use App\Http\Controllers\Api\V1\Location\LocationsController;
+use App\Http\Controllers\Api\V1\Category\CategoriesController;
+use App\Http\Controllers\Api\V1\AssignRole\SuperAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,19 @@ Route::prefix('front')->group(function(){
     Route::get('products', [ProductsController::class, 'guestUserProducts']); // Public access to product listing
     Route::get('products/{product}', [ProductsController::class, 'show']); // Public access to view a single product
     
+});
+
+//super-admin Routes
+
+
+
+// Protect routes with authentication middleware
+Route::middleware(['auth:api','role:super-admin'])->prefix('super-admin/users')->group(function () {
+    Route::get('/', [SuperAdminController::class, 'index']);         // List all users
+    Route::post('/', [SuperAdminController::class, 'store']);        // Create a new user
+    Route::get('/{id}', [SuperAdminController::class, 'show']);     // Get a specific user
+    Route::put('/{id}', [SuperAdminController::class, 'update']);   // Update a user
+    Route::delete('/{id}', [SuperAdminController::class, 'destroy']);// Delete a user
 });
 
 // Protected User Routes
@@ -58,6 +72,8 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')-
     Route::patch('{id}/restore', [ProductsController::class, 'restoreProduct']);
     Route::delete('{id}/force', [ProductsController::class, 'forceDelete']);
 });
+
+
 
 
 
