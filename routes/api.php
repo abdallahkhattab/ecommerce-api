@@ -49,9 +49,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('user-profile', [AuthController::class, 'getAuthenticatedUser']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
-    
-    // Locations are protected (only authenticated users can manage them)
-    Route::apiResource('locations', LocationsController::class);
+        
 });
 
 // Protected Admin/Editor/Seller Routes
@@ -81,6 +79,21 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('favorites/{productId}', [FavoriteController::class, 'removeFromFavorites']);
     Route::get('favorites', [FavoriteController::class, 'getFavorites']);
 });
+
+// locations
+
+Route::middleware('auth:api')->prefix('locations')->group(function () {
+    Route::middleware('role:Admin')->group(function () {
+        Route::get('/', [LocationsController::class, 'index']); // Admin only
+        Route::get('/{location}', [LocationsController::class, 'show']); // Admin only
+    });
+
+    Route::post('/', [LocationsController::class, 'store']);
+    Route::put('/{location}', [LocationsController::class, 'update']);
+    Route::delete('/{location}', [LocationsController::class, 'destroy']);
+    Route::get('/user/{userId}', [LocationsController::class, 'getUserLocations']);
+});
+
 
 
 

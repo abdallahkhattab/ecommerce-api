@@ -24,10 +24,10 @@ class LocationRequest extends FormRequest
     {
         return [
             //
+            'user_id' => 'exists:users,id',
             'street' => 'required',
             'building'=> 'required',
             'area'=> 'required',
-            'user_id'=> Auth::id(),
         ];
     }
 }

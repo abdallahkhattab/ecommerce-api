@@ -18,6 +18,7 @@ class FavoriteResource extends JsonResource
             'data'=>[
                 'id'=> $this->id,
                 'name'=>$this->name,
+                'image'=>$this->image,
             ]
            
         ];

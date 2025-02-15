@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1\Location;
 
-use App\Http\Controllers\Controller;
-use App\Http\Resources\LocationResource;
-use App\Http\Requests\LocationRequest;
 use App\Models\Location;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\LocationRequest;
+use App\Http\Resources\LocationResource;
 
 class LocationsController extends Controller
 {
@@ -14,17 +15,21 @@ class LocationsController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        // Fetch all locations with pagination
-        $locations = Location::paginate(10);
+{
+    $user = Auth::user();
 
-        if ($locations->isEmpty()) {
-            return response()->json(['message' => 'No locations found'], 404);
-        }
-
-        // Return locations as a collection of resources
-        return LocationResource::collection($locations);
+    if (!$user || !$user->hasRole('admin')) {
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
+
+    $locations = Location::paginate(10);
+
+    if ($locations->isEmpty()) {
+        return response()->json(['message' => 'No locations found'], 404);
+    }
+
+    return LocationResource::collection($locations);
+}
 
     /**
      * Store a newly created resource in storage.
@@ -32,8 +37,15 @@ class LocationsController extends Controller
     public function store(LocationRequest $request)
     {
         try {
+            $user = Auth::user();
+            $data = $request->validated();
+            if(!$user){
+            return response()->json(['message' => 'Unauthorized'], 401);
+            }
             // Create the location
-            $location = Location::create($request->validated());
+
+            $data['user_id'] = $user->id;
+            $location = Location::create($data);
 
             // Return the created location as a resource
             return response()->json([
@@ -53,9 +65,15 @@ class LocationsController extends Controller
      */
     public function show(Location $location)
     {
-        // If the location does not exist, Laravel's route model binding will handle it (returns 404 automatically).
+        $user = Auth::user();
+    
+        if (!$user || !$user->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+    
         return new LocationResource($location);
     }
+    
 
     /**
      * Update the specified resource in storage.
@@ -63,6 +81,12 @@ class LocationsController extends Controller
     public function update(LocationRequest $request, Location $location)
     {
         try {
+
+            $user = Auth::user();
+    
+            if (!$user || ($user->id !== $location->user_id && !$user->hasRole('admin'))) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
             // Update the location
             $location->update($request->validated());
 
@@ -85,6 +109,11 @@ class LocationsController extends Controller
     public function destroy(Location $location)
     {
         try {
+            $user = Auth::user();
+            if (!$user || ($user->id !== $location->user_id && !$user->hasRole('admin'))) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
             // Delete the location
             $location->delete();
 
@@ -98,22 +127,20 @@ class LocationsController extends Controller
         }
     }
 
-    public function getUserLocations(Request $request,$userId){
+    public function getUserLocations(Request $request, $userId)
+{
+    $user = $request->user();
 
-        if($request->user()->id !== (int) $userId){
-            return response()->json(['message' => 'You are not authorized to view this location'],
-            403);
-        }
+    if ($user->id !== (int) $userId && !$user->hasRole('admin')) {
+        return response()->json(['message' => 'You are not authorized to view these locations'], 403);
+    }
 
-   // Fetch locations for the specified user
     $locations = Location::where('user_id', $userId)->paginate(10);
 
-    if ($locations->isEmpty()) {
-        return response()->json(['message' => 'No locations found for this user'], 404);
-    }
+    return response()->json([
+        'message' => $locations->isEmpty() ? 'No locations found' : 'User locations retrieved successfully',
+        'locations' => LocationResource::collection($locations),
+    ]);
+}
 
-    // Return locations as a collection of resources
-    return LocationResource::collection($locations);
-
-    }
 }
