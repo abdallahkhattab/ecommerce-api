@@ -12,10 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('status',['Pending','Delivered','Out for delivery','Canceled','Accepted'])->default('Pending');
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Foreign key to users table
+            $table->foreignId('location_id')->constrained()->onDelete('cascade'); // Foreign key to locations table
+            $table->string('order_number')->unique(); // Unique order number
+            $table->decimal('total_price', 12, 2); // Total price of the order
+            $table->date('date_of_delivery')->nullable(); // Date of delivery (optional)
+            $table->enum('status', ['Pending', 'Delivered', 'Out for delivery', 'Canceled', 'Accepted'])->default('Pending'); // Order status
+            $table->timestamps(); // Created_at and updated_at timestamps
+    
         });
     }
 

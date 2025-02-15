@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Brand\BrandsController;
+use App\Http\Controllers\Api\V1\Order\OrdersController;
 use App\Http\Controllers\Api\V1\Product\FavoriteController;
 use App\Http\Controllers\Api\V1\Product\ProductsController;
 use App\Http\Controllers\Api\V1\Location\LocationsController;
@@ -92,6 +93,31 @@ Route::middleware('auth:api')->prefix('locations')->group(function () {
     Route::put('/{location}', [LocationsController::class, 'update']);
     Route::delete('/{location}', [LocationsController::class, 'destroy']);
     Route::get('/user/{userId}', [LocationsController::class, 'getUserLocations']);
+});
+
+
+Route::middleware(['auth:api'])->group(function () {
+    // Users can view their own orders
+    Route::get('orders/me', [OrdersController::class, 'index'])->name('orders.index');
+
+    // Users can create orders
+    Route::post('orders', [OrdersController::class, 'store'])->name('orders.store');
+
+    // Users can view specific order details (only their own)
+    Route::get('orders/{id}', [OrdersController::class, 'show'])->name('orders.show');
+
+    // Users can view their specific order details
+    Route::get('users/{user}/orders/{orderId}', [OrdersController::class, 'userOrderDetails'])->name('orders.userOrderDetails');
+});
+
+// Admin/Seller-specific routes
+Route::middleware(['auth:api', 'role:admin,seller'])->group(function () {
+    // Admins/sellers can view all orders
+    Route::get('orders', [OrdersController::class, 'index'])->name('orders.adminIndex');
+
+    // Admins/sellers can update or delete any order
+    Route::put('orders/{id}', [OrdersController::class, 'update'])->name('orders.update');
+    Route::delete('orders/{id}', [OrdersController::class, 'destroy'])->name('orders.destroy');
 });
 
 

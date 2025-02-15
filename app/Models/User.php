@@ -13,6 +13,9 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+
+
+
     public function favorites()
 {
     return $this->belongsToMany(Product::class, 'favorites')->withTimestamps();
@@ -29,6 +32,7 @@ class User extends Authenticatable implements JWTSubject
 {
     return $this->roles()->where('name', $role)->exists();
 }
+
 
 
 
