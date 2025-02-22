@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\OrderItem;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends Model
 {
@@ -17,6 +18,7 @@ class Order extends Model
     'date_of_delivery',
     'status'];
 
+
     public function user(){
         return $this->belongsTo(User::class);
     }
@@ -24,12 +26,17 @@ class Order extends Model
         // Relationship with OrderItems (products in the order)
         public function items()
         {
-            return $this->hasMany(OrderItems::class);
+            return $this->hasMany(OrderItem::class);
         }
     
 
     public function location(){
         return $this->belongsTo(location::class);
+    }
+
+    public static function generateOrderNumber(){
+        $order_number = 'ORD-'.date('y').'-'.rand(1000,9999);
+        return $order_number;
     }
 
 }

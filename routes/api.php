@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\Stripe\PaymentController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Brand\BrandsController;
 use App\Http\Controllers\Api\V1\Order\OrdersController;
@@ -33,7 +34,6 @@ Route::prefix('front')->group(function(){
 });
 
 //super-admin Routes
-
 
 
 // Protect routes with authentication middleware
@@ -111,7 +111,7 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 // Admin/Seller-specific routes
-Route::middleware(['auth:api', 'role:admin,seller'])->group(function () {
+Route::middleware(['auth:api', 'role:admin,seller,super-admin'])->group(function () {
     // Admins/sellers can view all orders
     Route::get('orders', [OrdersController::class, 'index'])->name('orders.adminIndex');
 
@@ -119,6 +119,13 @@ Route::middleware(['auth:api', 'role:admin,seller'])->group(function () {
     Route::put('orders/{id}', [OrdersController::class, 'update'])->name('orders.update');
     Route::delete('orders/{id}', [OrdersController::class, 'destroy'])->name('orders.destroy');
 });
+
+//stripe payment
+Route::middleware(['auth:api'])->group(function(){
+
+ Route::post('orders/{id}/pay', [PaymentController::class, 'pay']);
+});
+
 
 
 

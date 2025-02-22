@@ -36,7 +36,7 @@ class ProductsController extends Controller
   
     public function guestUserProducts(Request $request)
     {
-        $products = Product::with(['brand', 'category'])->where('is_available', true)
+        $products = Product::with(['brand', 'category'])->where('is_available',true)
         ->filterByPrice($request->priceFrom, $request->priceTo)
         ->sortByPrice($request->sort)
         ->paginate(10);

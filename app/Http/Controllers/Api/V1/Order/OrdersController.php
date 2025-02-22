@@ -65,6 +65,7 @@ class OrdersController extends Controller
             $totalPrice = 0;
             $order = Order::create([
                 'user_id' => $user->id,
+                'order_number' => Order::generateOrderNumber(), // Correct way to generate order number
                 'status' => 'pending',
                 'total_price' => 0, // Will update later
             ]);
@@ -147,7 +148,7 @@ class OrdersController extends Controller
                 return response()->json(['message' => 'Forbidden'], 403);
             }
     
-            if (in_array($order->status, ['shipped', 'delivered'])) {
+            if (in_array($order->status, ['Delivered', 'shipped'])) {
                 return response()->json(['message' => 'Cannot update shipped or delivered orders'], 400);
             }
     
@@ -155,7 +156,7 @@ class OrdersController extends Controller
                 'items' => 'nullable|array|min:1',
                 'items.*.product_id' => 'required_with:items|exists:products,id',
                 'items.*.quantity' => 'required_with:items|integer|min:1',
-                'status' => 'nullable|string|in:pending,processing,shipped,delivered,canceled',
+                'status' => 'nullable|string|in:pending,processing,paid,shipped,delivered,canceled',
             ]);
     
             DB::beginTransaction();
