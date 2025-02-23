@@ -1,7 +1,7 @@
 <?
 namespace App\Repositories\Cart;
 
-interface CartRepositaryInterface
+interface CartRepositoryInterface
 {
     public function add($userId, $productId, $quantity);
     public function remove($userId, $productId);
