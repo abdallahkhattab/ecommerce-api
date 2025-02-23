@@ -37,4 +37,37 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/web.php'));
         });
     }
+
+    public function map()
+{
+    $this->mapApiRoutes();
+    $this->mapAuthRoutes();
+    $this->mapSuperAdminRoutes();
+    $this->mapUserRoutes();
+    $this->mapAdminRoutes();
+    $this->mapProductsRoutes();
+    $this->mapFavoritesRoutes();
+    $this->mapLocationsRoutes();
+    $this->mapOrdersRoutes();
+    $this->mapPaymentsRoutes();
+}
+
+protected function loadCustomRoutes($file)
+{
+    Route::prefix('api/v1')
+        ->middleware('api')
+        ->namespace($this->namespace)
+        ->group(base_path("routes/api/V1{$file}.php"));
+}
+
+protected function mapAuthRoutes() { $this->loadRoutes('auth'); }
+protected function mapSuperAdminRoutes() { $this->loadRoutes('super_admin'); }
+protected function mapUserRoutes() { $this->loadRoutes('user'); }
+protected function mapAdminRoutes() { $this->loadRoutes('admin'); }
+protected function mapProductsRoutes() { $this->loadRoutes('products'); }
+protected function mapFavoritesRoutes() { $this->loadRoutes('favorites'); }
+protected function mapLocationsRoutes() { $this->loadRoutes('locations'); }
+protected function mapOrdersRoutes() { $this->loadRoutes('orders'); }
+protected function mapPaymentsRoutes() { $this->loadRoutes('payments'); }
+
 }
