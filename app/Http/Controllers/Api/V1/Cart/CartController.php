@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Api\V1\Cart;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\Cart\CartRepositoryInterface;
 
 class CartController extends Controller
 {
-    //
     protected $cartRepository;
 
     public function __construct(CartRepositoryInterface $cartRepository)
@@ -18,15 +18,17 @@ class CartController extends Controller
         $this->cartRepository = $cartRepository;
     }
 
-    public function addtoCart(Request $request)
+    public function addToCart(Request $request,User $userId)
     {
-
         $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $this->cartRepository->add(Auth::id(), $request->product_id, $request->quantity);
+        $userId = Auth::id();
+        $this->cartRepository->add($userId, $request->product_id, $request->quantity);
+
+        return response()->json(['message' => 'Product added to cart']);
     }
 
     public function removeFromCart($productId)

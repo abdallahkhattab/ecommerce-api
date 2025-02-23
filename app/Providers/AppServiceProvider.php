@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Category;
-use App\Observers\CategoryObserver;
 use App\Services\ImageService;
+use App\Observers\CategoryObserver;
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Cart\CartRepository;
+use App\Repositories\Cart\CartRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ImageService::class,function(){
             return new ImageService();
         });
+
     }
 
     /**

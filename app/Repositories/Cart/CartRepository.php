@@ -1,4 +1,4 @@
-<?
+<?php
 
 namespace App\Repositories\Cart;
 
@@ -8,10 +8,12 @@ class CartRepository implements CartRepositoryInterface
 {
     public function add($userId, $productId, $quantity)
     {
-        $cartItem = Cart::where('user_id', $userId)->where('product_id', $productId)->first();
+        $cartItem = Cart::with('user')->where('user_id', $userId)->where('product_id', $productId)->first();
 
         if ($cartItem) {
             $cartItem->increment('quantity', $quantity);
+            } else if (!$cartItem) {
+                
         } else {
             Cart::create([
                 'user_id' => $userId,
@@ -28,7 +30,7 @@ class CartRepository implements CartRepositoryInterface
     }
     public function getCart($userId)
     {
-        Cart::where('user_id', $userId)->with('products')->get();
+       return Cart::where('user_id', $userId)->with('products')->get();
     }
     public function clear($userId)
     {
