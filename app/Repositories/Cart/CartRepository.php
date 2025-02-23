@@ -4,7 +4,7 @@ namespace App\Repositories\Cart;
 
 use App\Models\Cart;
 
-class CartRepositary implements CartRepositoryInterface
+class CartRepository implements CartRepositoryInterface
 {
     public function add($userId, $productId, $quantity)
     {

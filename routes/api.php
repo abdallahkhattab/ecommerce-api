@@ -2,10 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\Stripe\PaymentController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Cart\CartController;
 use App\Http\Controllers\Api\V1\Brand\BrandsController;
 use App\Http\Controllers\Api\V1\Order\OrdersController;
+use App\Http\Controllers\Api\V1\Stripe\PaymentController;
 use App\Http\Controllers\Api\V1\Product\FavoriteController;
 use App\Http\Controllers\Api\V1\Product\ProductsController;
 use App\Http\Controllers\Api\V1\Location\LocationsController;
@@ -125,6 +126,15 @@ Route::middleware(['auth:api'])->group(function(){
 
  Route::post('orders/{id}/pay', [PaymentController::class, 'pay']);
 });
+
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('cart/add', [CartController::class, 'addToCart']);
+    Route::delete('cart/remove/{productId}', [CartController::class, 'removeFromCart']);
+    Route::get('cart', [CartController::class, 'getCart']);
+    Route::delete('cart/clear', [CartController::class, 'clearCart']);
+});
+
 
 
 
