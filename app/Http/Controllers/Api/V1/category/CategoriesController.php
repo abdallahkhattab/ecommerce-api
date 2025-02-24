@@ -20,6 +20,8 @@ class CategoriesController extends Controller
        
         $categories = Category::paginate(10); 
         return CategoryResource::collection($categories);
+       
+
     }
 
     /**

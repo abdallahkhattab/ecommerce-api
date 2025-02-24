@@ -31,7 +31,10 @@ class Product extends Model
     return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
 }
 
+    public function review(){
 
+        return $this->morphMany(Review::class,'reviewable');
+    }
     // Relationship with Brand
     public function brand()
     {

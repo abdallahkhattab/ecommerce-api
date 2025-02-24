@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\V1\Product\ProductsController;
 use App\Http\Controllers\Api\V1\Location\LocationsController;
 use App\Http\Controllers\Api\V1\Category\CategoriesController;
 use App\Http\Controllers\Api\V1\AssignRole\SuperAdminController;
+use App\Http\Controllers\Api\V1\Review\ReviewController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -133,6 +135,17 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('cart/remove/{productId}', [CartController::class, 'removeFromCart']);
     Route::get('cart', [CartController::class, 'getCart']);
     Route::delete('cart/clear', [CartController::class, 'clearCart']);
+});
+
+
+//reviews 
+
+Route::middleware('auth:api')->group(function(){
+Route::post('reviews/product/{id}', [ReviewController::class, 'storeProductReview']);
+//Route::post('reviews/seller/{id}', [ReviewController::class, 'storeSellerReview']);
+Route::get('reviews/product/{id}', [ReviewController::class, 'getProductReviews']);
+//Route::get('reviews/seller/{id}', [ReviewController::class, 'getSellerReviews']);
+
 });
 
 
