@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\UserSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,10 +27,10 @@ class DatabaseSeeder extends Seeder
         // $this->call(CategorySeeder::class);
 
         $this->call([
-         //   RoleSeeder::class, // Seed roles (admin, editor, seller)
-         //   UserSeeder::class, // Seed users with roles
-          //  BrandSeeder::class, // Seed brands
-        //    CategorySeeder::class, // Seed categories
+           RoleSeeder::class, // Seed roles (admin, editor, seller)
+            UserSeeder::class, // Seed users with roles
+           BrandSeeder::class, // Seed brands
+         CategorySeeder::class, // Seed categories
             ProductSeeder::class, // Seed products
         ]);
 

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Location;
 use Illuminate\Http\Request;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Support\Facades\DB;
@@ -59,12 +60,17 @@ class OrdersController extends Controller
                 'items.*.product_id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|integer|min:1',
             ]);
+
+            $location = Location::where('user_id', $user->id)->first();
     
             DB::beginTransaction();
+
+
     
             $totalPrice = 0;
             $order = Order::create([
                 'user_id' => $user->id,
+                'location_id'=>$location->id,
                 'order_number' => Order::generateOrderNumber(), // Correct way to generate order number
                 'status' => 'pending',
                 'total_price' => 0, // Will update later
