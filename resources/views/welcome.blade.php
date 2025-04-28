@@ -230,7 +230,7 @@
                     <div class="bg-gray-800 rounded-md p-4 overflow-x-auto">
                         <pre class="text-gray-300 text-sm">
 <span class="text-indigo-400">// Example: Add a product to cart</span>
-fetch('https://api.yourdomain.com/v1/cart/add', {
+fetch('https://api.ecommerce.com/v1/cart/add', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
