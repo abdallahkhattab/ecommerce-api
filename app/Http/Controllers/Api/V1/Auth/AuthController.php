@@ -13,121 +13,53 @@ use App\Http\Resources\UserResource;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Illuminate\Support\Facades\Validator;
 
-/**
- * @OA\Info(
- *      version="1.0.0",
- *      title="Auth API Documentation",
- *      description="API for user authentication and management",
- *      @OA\Contact(
- *          email="admin@example.com"
- *      ),
- *      @OA\License(
- *          name="Apache 2.0",
- *          url="http://www.apache.org/licenses/LICENSE-2.0.html"
- *      )
- * )
- *
- * @OA\Server(
- *      url=L5_SWAGGER_CONST_HOST,
- *      description="API Server"
- * )
- *
- * @OA\Tag(
- *     name="Authentication",
- *     description="API Endpoints for User Authentication"
- * )
- *
- * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     in="header",
- *     name="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT",
- * )
- */
+
+
 
 
 class AuthController extends Controller
 {
 
 
-     /**
-     * @OA\Post(
-     *     path="/auth/register",
-     *     tags={"Authentication"},
-     *     summary="Register a new user",
-     *     description="Creates a new user account and returns an authentication token",
-     *     operationId="register",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/RegisterRequest")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="User registered successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/AuthResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error",
-     *         @OA\JsonContent(ref="#/components/schemas/ValidationError")
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     )
-     * )
-     */
+     public function register(Request $request)
+     {
+         $validator = Validator::make($request->all(), [
+             'name' => 'required|string|max:255',
+             'email' => 'required|email|unique:users,email',
+             'password' => 'required|min:6|confirmed',
+         ]);
+     
+         if ($validator->fails()) {
+             return response()->json([
+                 'message' => 'Validation failed.',
+                 'errors' => $validator->errors()
+             ], 422);
+         }
+     
+         $data = $validator->validated();
+         $data['password'] = Hash::make($data['password']);
+     
+         try {
+             $user = User::create($data);
+             $token = JWTAuth::fromUser($user);
+     
+             return response()->json([
+                 'token' => $token,
+                 'user' => new UserResource($user),
+             ], 201);
+     
+         } catch (\Exception $e) {
+             return response()->json([
+                 'message' => 'Registration failed.',
+                 'error' => $e->getMessage()
+             ], 500);
+         }
+     }
+     
 
-    public function register(RegisterRequest $request)
-    {
-        $data = $request->validated();
-        $data['password'] = Hash::make($data['password']);
-
-        try {
-            $user = User::create($data);
-            $token = JWTAuth::fromUser($user);
-
-            return response()->json([
-                'token' => $token,
-                'user' => new UserResource($user),
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to create user'], 500);
-        }
-    }
-
-     /**
-     * @OA\Post(
-     *     path="/auth/login",
-     *     tags={"Authentication"},
-     *     summary="Authenticate a user",
-     *     description="Logs in a user and returns an authentication token",
-     *     operationId="login",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/LoginRequest")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="User authenticated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/AuthResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Invalid credentials",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error",
-     *         @OA\JsonContent(ref="#/components/schemas/ValidationError")
-     *     )
-     * )
-     */
+  
     public function login(LoginRequest $request)
     {
         $credentials = $request->only('email', 'password');
@@ -136,7 +68,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        $user = JWTAuth::user();
+    $user = JWTAuth::user();
        $user->load('roles'); // Eager-load the roles
 
         return response()->json([
@@ -145,31 +77,7 @@ class AuthController extends Controller
         ]);
     }
 
-   /**
-     * @OA\Get(
-     *     path="/auth/me",
-     *     tags={"Authentication"},
-     *     summary="Get authenticated user",
-     *     description="Returns the currently authenticated user's details",
-     *     operationId="getAuthenticatedUser",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="User details retrieved successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/UserResource")
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized (invalid or expired token)",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="User not found",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     )
-     * )
-     */
+  
     public function getAuthenticatedUser()
     {
         try {
