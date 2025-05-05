@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Product;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Http\Resources\FavoriteResource;
-use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Illuminate\Http\Request;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\ProductResource;
+use App\Http\Resources\FavoriteResource;
 
 class FavoriteController extends Controller
 {
     // Add product to favorites
     public function addToFavorites($productId)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
         $product = Product::find($productId);
 
         if (!$product) {
@@ -39,7 +40,7 @@ class FavoriteController extends Controller
     // Remove product from favorites
     public function removeFromFavorites($productId)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         // Detach product from favorites
         $user->favorites()->detach($productId);
@@ -52,7 +53,7 @@ class FavoriteController extends Controller
     // Get all favorite products
     public function getFavorites()
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
          // Get the actual products, not just pivot data
          $favorites = $user->favorites()->get();

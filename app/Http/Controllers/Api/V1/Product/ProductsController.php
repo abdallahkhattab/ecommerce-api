@@ -6,6 +6,7 @@ use App\Models\Product;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ImageService;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ProductRequest;
@@ -52,7 +53,7 @@ class ProductsController extends Controller
     public function index(Request $request)
     {
         // Get the authenticated user (if any)
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         // Fetch products with filters & pagination
         $products = Product::with(['brand', 'category'])
@@ -79,10 +80,12 @@ class ProductsController extends Controller
      */
     public function store(ProductRequest $request)
     {
+        $user = JWTAuth::user();
+
         try {
             // Create the product with the authenticated user's ID
             $productData = $request->validated();
-            $productData['user_id'] = Auth::id(); // Set the user_id to the authenticated user
+            $productData['user_id'] = $user->id; // Set the user_id to the authenticated user
             $productData['slug'] = Str::slug($productData['slug']) .'-' . uniqid();
             $product = Product::create($productData);
 
@@ -116,7 +119,7 @@ class ProductsController extends Controller
     public function show(Product $product)
     {
         // Ensure the user can view the product based on their role
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         if ($user && !$user->hasRole('admin')) {
             if ($user->hasRole('seller') && $product->user_id !== $user->id) {
@@ -147,7 +150,7 @@ class ProductsController extends Controller
     {
         try {
             // Ensure the seller can only update their own products
-            $user = Auth::user();
+            $user = JWTAuth::user();
 
             if ($user && !$user->hasRole(['admin', 'editor']) && $product->user_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
