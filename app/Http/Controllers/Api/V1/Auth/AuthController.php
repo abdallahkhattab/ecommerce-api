@@ -13,48 +13,53 @@ use App\Http\Resources\UserResource;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Illuminate\Support\Facades\Validator;
+
+
+
+
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
-    public function register(RegisterRequest $request)
-    {
-        $data = $request->validated();
 
-        // Check if the email is already used
-        if (User::where('email', $data['email'])->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'The email address is already registered.'
-            ], 409); // Conflict
-        }
 
-        $data['password'] = Hash::make($data['password']);
+     public function register(Request $request)
+     {
+         $validator = Validator::make($request->all(), [
+             'name' => 'required|string|max:255',
+             'email' => 'required|email|unique:users,email',
+             'password' => 'required|min:6|confirmed',
+         ]);
+     
+         if ($validator->fails()) {
+             return response()->json([
+                 'message' => 'Validation failed.',
+                 'errors' => $validator->errors()
+             ], 422);
+         }
+     
+         $data = $validator->validated();
+         $data['password'] = Hash::make($data['password']);
+     
+         try {
+             $user = User::create($data);
+             $token = JWTAuth::fromUser($user);
+     
+             return response()->json([
+                 'token' => $token,
+                 'user' => new UserResource($user),
+             ], 201);
+     
+         } catch (\Exception $e) {
+             return response()->json([
+                 'message' => 'Registration failed.',
+                 'error' => $e->getMessage()
+             ], 500);
+         }
+     }
+     
 
-        try {
-            $user = User::create($data);
-            $token = JWTAuth::fromUser($user);
-
-            return response()->json([
-                'success' => true,
-                'token' => $token,
-                'user' => new UserResource($user),
-            ], 201); // Created
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create user.',
-                'error' => $e->getMessage(), // Optional: hide in production
-            ], 500);
-        }
-    }
-
-    /**
-     * Login and return token
-     */
+  
     public function login(LoginRequest $request)
     {
         $credentials = $request->only('email', 'password');
@@ -67,21 +72,32 @@ class AuthController extends Controller
                 ], 401);
             }
 
+    $user = JWTAuth::user();
+       $user->load('roles'); // Eager-load the roles
+
+        return response()->json([
+            'token' => $token,
+            'user' => new UserResource($user),
+        ]);
+    }
+
+  
+    public function getAuthenticatedUser()
+    {
+        try {
             $user = JWTAuth::user();
-            $user->load('roles'); // If roles relationship exists
 
-            return response()->json([
-                'success' => true,
-                'token' => $token,
-                'user' => new UserResource($user),
-            ]);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Login failed.',
-                'error' => $e->getMessage(), // Optional
-            ], 500);
+            return response()->json(new UserResource($user));
+        } catch (TokenExpiredException $e) {
+            return response()->json(['error' => 'Token expired'], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Token not provided'], 401);
         }
     }
 
