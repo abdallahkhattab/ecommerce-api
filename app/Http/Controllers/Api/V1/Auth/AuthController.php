@@ -46,9 +46,10 @@ class AuthController extends Controller
              $token = JWTAuth::fromUser($user);
      
              return response()->json([
+                
                  'token' => $token,
-                 'user' => new UserResource($user),
-             ], 201);
+                 'data' => new UserResource($user),
+             ], 200);
      
          } catch (\Exception $e) {
              return response()->json([
@@ -64,112 +65,77 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
-        }
+   
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid credentials.',
+                ], 422);
+            }
 
     $user = JWTAuth::user();
        $user->load('roles'); // Eager-load the roles
 
         return response()->json([
             'token' => $token,
-            'user' => new UserResource($user),
+            'data' => new UserResource($user),
         ]);
     }
 
   
-    public function getAuthenticatedUser()
-    {
-        try {
+     public function getAuthenticatedUser(){
+      
             $user = JWTAuth::user();
+            $user->load('location');
 
             if (!$user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
 
-            return response()->json(new UserResource($user));
-        } catch (TokenExpiredException $e) {
-            return response()->json(['error' => 'Token expired'], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json(['error' => 'Invalid token'], 401);
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Token not provided'], 401);
-        }
+       return response()->json(new UserResource($user));
+    
     }
 
-      /**
-     * @OA\Post(
-     *     path="/auth/refresh",
-     *     tags={"Authentication"},
-     *     summary="Refresh authentication token",
-     *     description="Refreshes the current authentication token",
-     *     operationId="refresh",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Token refreshed successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="token", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized (invalid or expired token)",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     )
-     * )
+    /**
+     * Refresh token
      */
     public function refresh()
     {
         try {
             $newToken = JWTAuth::parseToken()->refresh();
 
-            return response()->json(['token' => $newToken]);
+            return response()->json([
+                'success' => true,
+                'token' => $newToken,
+            ]);
+
         } catch (TokenExpiredException $e) {
-            return response()->json(['error' => 'Token expired'], 401);
+            return response()->json(['success' => false, 'message' => 'Token expired'], 401);
         } catch (TokenInvalidException $e) {
-            return response()->json(['error' => 'Invalid token'], 401);
+            return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
         } catch (JWTException $e) {
-            return response()->json(['error' => 'Token not provided'], 401);
+            return response()->json(['success' => false, 'message' => 'Token not provided'], 401);
         }
     }
 
-
     /**
-     * @OA\Post(
-     *     path="/auth/logout",
-     *     tags={"Authentication"},
-     *     summary="Logout user",
-     *     description="Invalidates the current authentication token",
-     *     operationId="logout",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successfully logged out",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Successfully logged out")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized (invalid or expired token)",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Failed to log out",
-     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
-     *     )
-     * )
+     * Logout user
      */
     public function logout()
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
 
-            return response()->json(['message' => 'Successfully logged out']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully logged out',
+            ],200);
         } catch (JWTException $e) {
-            return response()->json(['error' => 'Failed to log out'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to log out.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

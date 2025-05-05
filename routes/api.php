@@ -13,7 +13,7 @@ use App\Http\Controllers\Api\V1\Location\LocationsController;
 use App\Http\Controllers\Api\V1\Category\CategoriesController;
 use App\Http\Controllers\Api\V1\AssignRole\SuperAdminController;
 use App\Http\Controllers\Api\V1\Review\ReviewController;
-
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +27,7 @@ use App\Http\Controllers\Api\V1\Review\ReviewController;
 */
 
 // Public Routes (No Authentication Required)
-Route::post('register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
 Route::prefix('front')->group(function(){
@@ -54,6 +54,7 @@ Route::middleware(['auth:api','role:super-admin'])->prefix('super-admin/users')-
 // Protected User Routes
 Route::middleware('auth:api')->group(function () {
     Route::get('user-profile', [AuthController::class, 'getAuthenticatedUser']);
+    Route::post('update-profile/{id}',[ProfileController::class,'update']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
         
@@ -66,6 +67,7 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
     
     // Product management is restricted, except for index & show
     Route::get('products', [ProductsController::class, 'index']); // Create product
+    Route::get('products/{product}', [ProductsController::class, 'show']);
     Route::post('products', [ProductsController::class, 'store']); // Create product
     Route::put('products/{product}', [ProductsController::class, 'update']); // Update product
     Route::delete('products/{product}', [ProductsController::class, 'destroy']); // Delete product
