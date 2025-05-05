@@ -60,9 +60,14 @@ class Handler extends ExceptionHandler
             ], $this->isHttpException($exception) ? $exception->getStatusCode() : Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
+        
+
         // Fallback to the parent handler for non-API requests
         return parent::render($request, $exception);
 
     }
+
+
+
 
 }

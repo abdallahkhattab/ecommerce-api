@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\ShowCategoryResource;
+
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +31,19 @@ class CategoriesController extends Controller
      */
     public function store(CategoryRequest $request)
     {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+    
+        // Load roles and ensure it's a collection
+        $user->loadMissing('roles');
+    
+        if (!optional($user->roles)->count()) {
+            return response()->json(['message' => 'Forbidden – User has no roles'], 403);
+        }
+    
         try {
             $category = Category::create($request->validated());
 
@@ -44,7 +59,7 @@ class CategoriesController extends Controller
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error creating category', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Error creating category', 'error' => $e->getMessage()], 422);
         }
     }
 
@@ -52,10 +67,12 @@ class CategoriesController extends Controller
      * Display the specified resource.
      */
     public function show(Category $category)
+    
     {
+        $category->load('products'); // Eager-load related products
         return response()->json([
             'message' => 'Category retrieved successfully',
-            'category' => new CategoryResource($category),
+            'data'=> new ShowCategoryResource($category),
         ]);
     }
 

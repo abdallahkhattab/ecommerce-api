@@ -14,6 +14,12 @@ class Category extends Model
 
     protected $fillable = ['name','slug','description','image'];
 
+    public function products()
+{
+    return $this->hasMany(Product::class);
+}
+
+
     /*
     public function setNameAttribute($value){
         $this->attributes['name'] = $value; // Set the name attribute
