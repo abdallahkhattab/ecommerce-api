@@ -7,6 +7,9 @@ use App\Http\Requests\BrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+use Illuminate\Support\Facades\Auth;
 
 class BrandsController extends Controller
 {
@@ -16,13 +19,19 @@ class BrandsController extends Controller
     public function index()
     {
         $brands = Brand::paginate();
-
-        if ($brands->isEmpty()) {
+    
+        if ($brands->count() === 0) {
             return response()->json(['message' => 'No brands found'], 404);
         }
+    
+        $brandCollection = BrandResource::collection($brands);
 
-        return BrandResource::collection($brands);
+        return response()->json([
+        'code'=>200,
+        'data' => $brandCollection,
+        ], 200);
     }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -35,7 +44,7 @@ class BrandsController extends Controller
             return response()->json([
                 'message' => 'Brand created successfully',
                 'brand' => new BrandResource($brand),
-            ], 201);
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create brand'], 500);
         }
@@ -54,25 +63,35 @@ class BrandsController extends Controller
             return response()->json(['message' => 'Brand not found'], 404);
         }*/
 
-        return response()->json(['brand' => new BrandResource($brand)]);
+        return response()->json([
+         
+        'data'=> new BrandResource($brand)]);
     }
 
     /**
      * Update the specified resource in storage.
      */
+
     public function update(BrandRequest $request, Brand $brand)
     {
         try {
-            $brand->update($request->validated());
-
+            $data = $request->validated();
+            $brand->update($data);
+    
             return response()->json([
                 'message' => 'Brand updated successfully',
                 'brand' => new BrandResource($brand),
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update brand'], 500);
+            return response()->json(['message' => 'Something went wrong'], 500);
         }
     }
+    
 
     /**
      * Remove the specified resource from storage.

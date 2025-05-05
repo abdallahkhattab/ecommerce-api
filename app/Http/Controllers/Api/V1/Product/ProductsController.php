@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Product;
 
 use App\Models\Product;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ImageService;
 use App\Http\Controllers\Controller;
@@ -10,8 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Storage;
-
-
+use Illuminate\Validation\ValidationException;
 
 class ProductsController extends Controller
 {
@@ -40,10 +40,15 @@ class ProductsController extends Controller
         ->filterByPrice($request->priceFrom, $request->priceTo)
         ->sortByPrice($request->sort)
         ->paginate(10);
-        return ProductResource::collection($products);
+        return[
+            'code'=>200,
+           'data'=>[
+            'products'=>ProductResource::collection($products),
+           ] ,
+        ];
     }
 
-    
+    //eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzQ2NDc1OTY1LCJleHAiOjE3NDY0Nzk1NjUsIm5iZiI6MTc0NjQ3NTk2NSwianRpIjoiQ1hqVDZrb0pzTTg1c3lWQSIsInN1YiI6IjI1IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyJ9.D8T71Z5CTdIszvO0jQgoZ1C52vpShrk5Q0lYLKTHJPo
     public function index(Request $request)
     {
         // Get the authenticated user (if any)
@@ -58,8 +63,14 @@ class ProductsController extends Controller
 
         // Return response
         return $products->isEmpty()
-            ? response()->json(['message' => 'No products found'], 404)
-            : ProductResource::collection($products);
+            ? response()->json([
+                'code'=>404,
+                'message' => 'No products found'], 404)
+            :[
+            'code'=>200,
+            'data'=>[
+                'products'=>ProductResource::collection($products),
+            ]] ;
     }
 
 
@@ -72,7 +83,7 @@ class ProductsController extends Controller
             // Create the product with the authenticated user's ID
             $productData = $request->validated();
             $productData['user_id'] = Auth::id(); // Set the user_id to the authenticated user
-
+            $productData['slug'] = Str::slug($productData['slug']) .'-' . uniqid();
             $product = Product::create($productData);
 
             // Handle image upload if provided
@@ -82,9 +93,15 @@ class ProductsController extends Controller
             }
 
             return response()->json([
+                'code'=>200,
                 'message' => 'Product created successfully',
+                'data'=>[
                 'product' => new ProductResource($product),
-            ], 201);
+                ],
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error creating product',
@@ -111,7 +128,12 @@ class ProductsController extends Controller
             }
         }
 
-        return new ProductResource($product); // Return formatted resource
+        return [
+            'data'=>[
+            'product'=>new ProductResource($product),
+            ]
+            ];
+             // Return formatted resource
     }
 
     /**
@@ -137,7 +159,7 @@ class ProductsController extends Controller
             // Handle image update if provided
             if ($request->hasFile('image')) {
                 if ($product->image) {
-                    Storage::delete('public/products/' . $product->image); // Delete old image
+                    Storage::delete('public/' . $product->image); // Delete old image
                 }
                 $product->image = $this->imageService->uploadImage($request->file('image'));
                 $product->save(); // Save the updated image path
@@ -176,7 +198,9 @@ class ProductsController extends Controller
             // Soft delete the product
             $product->delete();
 
-            return response()->json(['message' => 'Product deleted successfully'], 200);
+            return response()->json([
+                'code'=>200,
+                'message' => 'Product deleted successfully'], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error deleting product',

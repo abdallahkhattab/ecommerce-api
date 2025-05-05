@@ -19,7 +19,13 @@ class CategoriesController extends Controller
     {
        
         $categories = Category::paginate(10); 
-        return CategoryResource::collection($categories);
+        return
+        [
+        'code'=>200,
+          'data'=> [
+            'categories'=>CategoryResource::collection($categories),
+          ] 
+        ]; 
        
 
     }
@@ -38,8 +44,11 @@ class CategoriesController extends Controller
             }
 
             return response()->json([
+                'code'=>200,
                 'message' => 'Category created successfully',
-                'category' => new CategoryResource($category),
+                'data'=>[
+                    'category' => new CategoryResource($category),
+                ],
             ], 201);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -54,8 +63,11 @@ class CategoriesController extends Controller
     public function show(Category $category)
     {
         return response()->json([
+            'code'=>200,
             'message' => 'Category retrieved successfully',
-            'category' => new CategoryResource($category),
+            'data'=>[
+                'category' => new CategoryResource($category),
+            ]
         ]);
     }
 
@@ -78,8 +90,11 @@ class CategoriesController extends Controller
             }
 
             return response()->json([
+                'code'=>200,
                 'message' => 'Category updated successfully',
+                'data'=>[
                 'category' => new CategoryResource($category),
+                ],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -103,7 +118,9 @@ class CategoriesController extends Controller
 
             $category->delete();
 
-            return response()->json(['message' => 'Category deleted successfully']);
+            return response()->json([
+            'code'=>200,
+            'message' => 'Category deleted successfully']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Category not found'], 404);
         } catch (\Exception $e) {

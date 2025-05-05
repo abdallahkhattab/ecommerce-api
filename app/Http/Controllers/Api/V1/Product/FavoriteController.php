@@ -27,8 +27,12 @@ class FavoriteController extends Controller
         }
 
         return response()->json([
-            'message' => 'Product added to favorites',
-            'product' => new FavoriteResource($product),
+            'code'=>200,
+            'data'=>[
+                'message' => 'Product added to favorites',
+                'product' => new FavoriteResource($product),
+    
+            ]
         ], 200);
     }
 
@@ -40,7 +44,9 @@ class FavoriteController extends Controller
         // Detach product from favorites
         $user->favorites()->detach($productId);
 
-        return response()->json(['message' => 'Product removed from favorites'], 200);
+        return response()->json([
+            'code'=>200,
+            'message' => 'Product removed from favorites'], 200);
     }
 
     // Get all favorite products
@@ -56,7 +62,10 @@ class FavoriteController extends Controller
         }
         
         return response()->json([
+            'code'=>200,
+            'data'=>[
             'favorites' => FavoriteResource::collection($favorites),
+            ],
         ], 200);
     }
 }
