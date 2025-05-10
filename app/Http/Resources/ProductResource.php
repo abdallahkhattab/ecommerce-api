@@ -20,8 +20,6 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-           
-            
             'id' => $this->id,
             'user_id' =>$this->user_id,
             'name' => $this->name,
@@ -38,9 +36,7 @@ class ProductResource extends JsonResource
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'), // Handle null timestamps
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'), // Handle null timestamps
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'), // Optional: Include deleted_at if applicable
-        
-        
-           
+          
         ];
      
 

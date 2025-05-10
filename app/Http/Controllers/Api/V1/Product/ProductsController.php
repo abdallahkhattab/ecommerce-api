@@ -6,8 +6,8 @@ use App\Models\Product;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ImageService;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Storage;
@@ -81,29 +81,35 @@ class ProductsController extends Controller
     {
         $user = JWTAuth::user();
 
+        if ($user && !$user->hasRole('admin')) {
+            if ($user->hasRole('seller') && $product->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            if (!$user->hasRole('seller') && !$product->is_available) {
+                return response()->json(['message' => 'Product not available'], 403);
+            }
+        }
+
         try {
-            // Create the product with the authenticated user's ID
             $productData = $request->validated();
             $productData['user_id'] = $user->id; // Set the user_id to the authenticated user
             $productData['slug'] = Str::slug($productData['slug']) .'-' . uniqid();
             $product = Product::create($productData);
-
-            // Handle image upload if provided
+    
             if ($request->hasFile('image')) {
                 $product->image = $this->imageService->uploadImage($request->file('image'));
-                $product->save(); // Save the updated image path
+                $product->save();
             }
-
+    
             return response()->json([
-                'code'=>200,
+                'code' => 200,
                 'message' => 'Product created successfully',
-                'data'=>[
-                'product' => new ProductResource($product),
+                'data' => [
+                    'product' => new ProductResource($product),
                 ],
             ], 200);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error creating product',
@@ -111,7 +117,7 @@ class ProductsController extends Controller
             ], 500);
         }
     }
-
+    
     /**
      * Display the specified resource.
      */
@@ -186,7 +192,7 @@ class ProductsController extends Controller
     {
         try {
             // Ensure the seller can only delete their own products
-            $user = Auth::user();
+            $user = JWTAuth::user();
 
             if ($user && !$user->hasRole('admin') && $product->user_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
@@ -216,7 +222,7 @@ class ProductsController extends Controller
      */
     public function deletedProducts(Product $product)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         $product = Product::onlyTrashed()->where('user_id', $user->id)->paginate();
 
@@ -232,7 +238,7 @@ class ProductsController extends Controller
      */
     public function forceDelete($id)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
         $product = Product::withTrashed()->find($id);
 
         if (!$product) {
@@ -258,7 +264,7 @@ class ProductsController extends Controller
      */
     public function restoreProduct($id)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         $product = Product::withTrashed()->find($id);
 

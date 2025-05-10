@@ -33,6 +33,9 @@ Route::post('login', [AuthController::class, 'login']);
 Route::prefix('front')->group(function(){
     Route::get('products', [ProductsController::class, 'guestUserProducts']); // Public access to product listing
     Route::get('products/{product}', [ProductsController::class, 'show']); // Public access to view a single product
+    Route::get('brands',[BrandsController::class , 'index']);
+    Route::get('categories',[CategoriesController::class,'index']);
+    Route::get('categories/{category}' , [CategoriesController::class , 'show']);
     
 });
 
