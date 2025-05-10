@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ImageService;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Storage;
@@ -52,7 +52,7 @@ class ProductsController extends Controller
     public function index(Request $request)
     {
         // Get the authenticated user (if any)
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         // Fetch products with filters & pagination
         $products = Product::with(['brand', 'category'])
@@ -79,13 +79,22 @@ class ProductsController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        // Validation is automatically handled by ProductRequest
-    
+        $user = JWTAuth::user();
+
+        if ($user && !$user->hasRole('admin')) {
+            if ($user->hasRole('seller') && $product->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            if (!$user->hasRole('seller') && !$product->is_available) {
+                return response()->json(['message' => 'Product not available'], 403);
+            }
+        }
+
         try {
             $productData = $request->validated();
-            $productData['user_id'] = Auth::id();
-            $productData['slug'] = Str::slug($productData['slug']) . '-' . uniqid();
-    
+            $productData['user_id'] = $user->id; // Set the user_id to the authenticated user
+            $productData['slug'] = Str::slug($productData['slug']) .'-' . uniqid();
             $product = Product::create($productData);
     
             if ($request->hasFile('image')) {
@@ -115,7 +124,7 @@ class ProductsController extends Controller
     public function show(Product $product)
     {
         // Ensure the user can view the product based on their role
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         if ($user && !$user->hasRole('admin')) {
             if ($user->hasRole('seller') && $product->user_id !== $user->id) {
@@ -146,7 +155,7 @@ class ProductsController extends Controller
     {
         try {
             // Ensure the seller can only update their own products
-            $user = Auth::user();
+            $user = JWTAuth::user();
 
             if ($user && !$user->hasRole(['admin', 'editor']) && $product->user_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
@@ -183,7 +192,7 @@ class ProductsController extends Controller
     {
         try {
             // Ensure the seller can only delete their own products
-            $user = Auth::user();
+            $user = JWTAuth::user();
 
             if ($user && !$user->hasRole('admin') && $product->user_id !== $user->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
@@ -213,7 +222,7 @@ class ProductsController extends Controller
      */
     public function deletedProducts(Product $product)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         $product = Product::onlyTrashed()->where('user_id', $user->id)->paginate();
 
@@ -229,7 +238,7 @@ class ProductsController extends Controller
      */
     public function forceDelete($id)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
         $product = Product::withTrashed()->find($id);
 
         if (!$product) {
@@ -255,7 +264,7 @@ class ProductsController extends Controller
      */
     public function restoreProduct($id)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         $product = Product::withTrashed()->find($id);
 

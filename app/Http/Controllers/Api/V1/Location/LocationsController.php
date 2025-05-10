@@ -6,6 +6,8 @@ use App\Models\Location;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
 use App\Http\Requests\LocationRequest;
 use App\Http\Resources\LocationResource;
 
@@ -16,7 +18,7 @@ class LocationsController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         if (!$user || !$user->hasRole('admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -40,7 +42,7 @@ class LocationsController extends Controller
     public function store(LocationRequest $request)
     {
         try {
-            $user = Auth::user();
+            $user = JWTAuth::user();
             $data = $request->validated();
             if (!$user) {
                 return response()->json(['message' => 'Unauthorized'], 401);
@@ -69,7 +71,7 @@ class LocationsController extends Controller
      */
     public function show(Location $location)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         if (!$user || !$user->hasRole('admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -93,7 +95,7 @@ class LocationsController extends Controller
     {
         try {
 
-            $user = Auth::user();
+            $user = JWTAuth::user();
 
             if (!$user || ($user->id !== $location->user_id && !$user->hasRole('admin'))) {
                 return response()->json(['message' => 'Unauthorized'], 401);
@@ -123,7 +125,7 @@ class LocationsController extends Controller
     public function destroy(Location $location)
     {
         try {
-            $user = Auth::user();
+            $user = JWTAuth::user();
             if (!$user || ($user->id !== $location->user_id && !$user->hasRole('admin'))) {
                 return response()->json(['message' => 'Unauthorized'], 401);
             }

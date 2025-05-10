@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -26,24 +27,32 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $exception)
     {
-        // Log the exception for debugging
         if ($request->expectsJson()) {
             \Log::error('API Exception: ' . get_class($exception) . ' - ' . $exception->getMessage());
         }
 
-           // Catch validation exceptions and return 422 with proper format
-    if ($exception instanceof ValidationException) {
-        return response()->json([
-            'code'=>422,
-            'message' => 'Validation failed',
-            'errors' => $exception->errors(),
-        ], 422);
-    }
+        // Handle ReflectionException (missing class)
+        if ($exception instanceof \ReflectionException && $request->expectsJson()) {
+            return response()->json([
+                'code' => 500,
+                'message' => 'Internal Server Error',
+                'error' => 'Middleware or class not found: ' . $exception->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Catch validation exceptions
+        if ($exception instanceof ValidationException) {
+            return response()->json([
+                'code' => 422,
+                'message' => 'Validation failed',
+                'errors' => $exception->errors(),
+            ], 422);
+        }
 
         // Handle AuthenticationException
         if ($exception instanceof AuthenticationException && $request->expectsJson()) {
             return response()->json([
-                'code'=>401,
+                'code' => 401,
                 'message' => 'Unauthenticated.',
                 'error' => 'Token is missing, invalid, or expired.'
             ], Response::HTTP_UNAUTHORIZED);
@@ -52,7 +61,7 @@ class Handler extends ExceptionHandler
         // Handle ModelNotFoundException
         if ($exception instanceof ModelNotFoundException && $request->expectsJson()) {
             return response()->json([
-                
+                'code' => 404,
                 'message' => 'The requested resource was not found.',
             ], Response::HTTP_NOT_FOUND);
         }
@@ -60,6 +69,7 @@ class Handler extends ExceptionHandler
         // Handle NotFoundHttpException
         if ($exception instanceof NotFoundHttpException && $request->expectsJson()) {
             return response()->json([
+                'code' => 404,
                 'message' => 'The requested URL was not found.',
             ], Response::HTTP_NOT_FOUND);
         }
@@ -67,6 +77,7 @@ class Handler extends ExceptionHandler
         // Handle other exceptions
         if ($request->expectsJson()) {
             return response()->json([
+                'code' => 500,
                 'message' => $exception->getMessage() ?: 'Server Error',
                 'details' => config('app.debug') ? $exception->getTrace() : null,
             ], $this->isHttpException($exception) ? $exception->getStatusCode() : Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -79,6 +90,7 @@ class Handler extends ExceptionHandler
     {
         if ($request->expectsJson()) {
             return response()->json([
+                'code' => 401,
                 'message' => 'Unauthenticated.',
                 'error' => 'Token is missing, invalid, or expired.'
             ], Response::HTTP_UNAUTHORIZED);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ShowCategoryResource;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
@@ -37,7 +38,7 @@ class CategoriesController extends Controller
      */
     public function store(CategoryRequest $request)
     {
-        $user = Auth::user();
+        $user = JWTAuth::user();
 
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
