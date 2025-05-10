@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Product\ProductsController;
 use App\Http\Controllers\Api\V1\Location\LocationsController;
 use App\Http\Controllers\Api\V1\Category\CategoriesController;
 use App\Http\Controllers\Api\V1\AssignRole\SuperAdminController;
+use App\Http\Controllers\Api\V1\Complaint\ComplaintController;
 use App\Http\Controllers\Api\V1\Review\ReviewController;
 use App\Http\Controllers\ProfileController;
 
@@ -57,6 +58,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('update-profile/{id}',[ProfileController::class,'update']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
+    Route::post('complaint',[ComplaintController::class,'store']);
         
 });
 
