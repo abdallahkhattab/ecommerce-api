@@ -33,6 +33,7 @@ class ProductRequest extends FormRequest
             'discount' => 'nullable|numeric|min:0',
             'image' => 'nullable', // Max size: 2MB
             'quantity' => 'required|integer|min:0',
+            'description' => 'nullable',
      
         ];
     }

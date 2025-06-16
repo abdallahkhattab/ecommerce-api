@@ -57,9 +57,10 @@ class FavoriteController extends Controller
          // Get the actual products, not just pivot data
          $favorites = $user->favorites()->get();
 
+         /*
         if($favorites->isEmpty()){
             return response()->json(['message' => 'No favorites found'], 404);
-        }
+        }*/
         
         return response()->json([
             'code'=>200,
