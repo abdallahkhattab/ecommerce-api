@@ -77,47 +77,41 @@ class ProductsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ProductRequest $request)
-    {
-        $user = JWTAuth::user();
+public function store(ProductRequest $request)
+{
+    $user = JWTAuth::user();
 
-        if ($user && !$user->hasRole('admin')) {
-            if ($user->hasRole('seller') && $product->user_id !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            if (!$user->hasRole('seller') && !$product->is_available) {
-                return response()->json(['message' => 'Product not available'], 403);
-            }
-        }
-
-        try {
-            $productData = $request->validated();
-            $productData['user_id'] = $user->id; // Set the user_id to the authenticated user
-            $productData['slug'] = Str::slug($productData['slug']) .'-' . uniqid();
-            $product = Product::create($productData);
-    
-            if ($request->hasFile('image')) {
-                $product->image = $this->imageService->uploadImage($request->file('image'));
-                $product->save();
-            }
-    
-            return response()->json([
-                'code' => 200,
-                'message' => 'Product created successfully',
-                'data' => [
-                    'product' => new ProductResource($product),
-                ],
-            ], 200);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error creating product',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+    if ($user && !$user->hasRole('admin') && !$user->hasRole('seller')) {
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
-    
+
+    try {
+        $productData = $request->validated();
+        $productData['user_id'] = $user->id; // Set the user_id to the authenticated user
+        $productData['slug'] = Str::slug($productData['slug']) . '-' . uniqid();
+        
+        $product = Product::create($productData);
+
+        if ($request->hasFile('image')) {
+            $product->image = $this->imageService->uploadImage($request->file('image'));
+            $product->save();
+        }
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Product created successfully',
+            'data' => [
+                'product' => new ProductResource($product),
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error creating product',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
     /**
      * Display the specified resource.
      */

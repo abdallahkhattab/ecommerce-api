@@ -65,7 +65,9 @@ Route::middleware('auth:api')->group(function () {
 // Protected Admin/Editor/Seller Routes
 Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
     Route::apiResource('brands', BrandsController::class);
-    Route::apiResource('categories', CategoriesController::class);
+    Route::apiResource('categories', CategoriesController::class)->except('update');
+    Route::post('categories/update/{category}' , [CategoriesController::class , 'update']);
+
     
     // Product management is restricted, except for index & show
     Route::get('products', [ProductsController::class, 'index']); // Create product

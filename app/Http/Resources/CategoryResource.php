@@ -28,9 +28,9 @@ class CategoryResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'slug'=> $this->slug,
-            'image'=> $this->image,
+            'image'=> $this->image ? asset('storage/' . $this->image) : null,
             'products' => ProductResource::collection($this->whenLoaded('products')),
-            
+
            // 'created_at' => $this->created_at->format('Y-m-d H:i:s'),
            // 'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
         ];

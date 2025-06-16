@@ -44,9 +44,9 @@ class ProfileController extends Controller
             'name' => 'nullable|string|max:255',
             'email' => 'nullable|email|unique:users,email' .$id,
             'password' => 'nullable|min:6|confirmed',
-            'area' => 'nullable|string',
-            'street'=>'nullable|string',
-            'building'=> 'nullable|string',
+            'area' => 'required|string',
+            'street'=>'required|string',
+            'building'=> 'required|string',
             'user_id'=>'nullable',
         ]);
 

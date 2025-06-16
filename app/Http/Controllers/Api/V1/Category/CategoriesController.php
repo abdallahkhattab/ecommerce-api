@@ -92,36 +92,53 @@ class CategoriesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(CategoryRequest $request, Category $category)
-    {
-        try {
-            $category->update($request->validated());
+  public function update(CategoryRequest $request, Category $category)
+{
 
-            if ($request->hasFile('image')) {
-                // Delete old image if exists
-                if ($category->image) {
-                    Storage::disk('public')->delete($category->image);
-                }
+    try {
+        $data = $request->validated();
 
-                $imagePath = $this->handleImageUpload($request->file('image'));
-                $category->update(['image' => $imagePath]);
+        // Handle image upload if a new image is provided
+        if ($request->hasFile('image')) {
+            // Delete old image if it exists
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
             }
 
-            return response()->json([
-                'code'=>200,
-                'message' => 'Category updated successfully',
-                'data'=>[
-                'category' => new CategoryResource($category),
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Category not found'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error updating category', 'error' => $e->getMessage()], 500);
+            // Upload new image and set path
+            $imagePath = $this->handleImageUpload($request->file('image'));
+            $data['image'] = $imagePath;
         }
+
+        // Update category with validated data (including image if present)
+        $category->update($data);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Category updated successfully',
+            'data' => [
+                'category' => new CategoryResource($category),
+            ],
+        ]);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], 422);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'message' => 'Category not found'
+        ], 404);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error updating category',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Remove the specified resource from storage.
