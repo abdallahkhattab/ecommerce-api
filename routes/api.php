@@ -37,6 +37,8 @@ Route::prefix('front')->group(function(){
     Route::get('brands',[BrandsController::class , 'index']);
     Route::get('categories',[CategoriesController::class,'index']);
     Route::get('categories/{category}' , [CategoriesController::class , 'show']);
+    Route::get('products/category/{category}', [ProductsController::class, 'getProductsByCategory']);
+
     
 });
 
@@ -72,6 +74,7 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
     // Product management is restricted, except for index & show
     Route::get('products', [ProductsController::class, 'index']); // Create product
     Route::get('products/{product}', [ProductsController::class, 'show']);
+
     Route::post('products', [ProductsController::class, 'store']); // Create product
     Route::put('products/{product}', [ProductsController::class, 'update']); // Update product
     Route::delete('products/{product}', [ProductsController::class, 'destroy']); // Delete product

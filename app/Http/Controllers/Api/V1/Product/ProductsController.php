@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
+use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -39,7 +40,7 @@ class ProductsController extends Controller
         $products = Product::with(['brand', 'category'])->where('is_available',true)
         ->filterByPrice($request->priceFrom, $request->priceTo)
         ->sortByPrice($request->sort)
-        ->paginate(10);
+        ->paginate(25);
         return[
             'code'=>200,
            'data'=>[
@@ -47,6 +48,7 @@ class ProductsController extends Controller
            ] ,
         ];
     }
+    
 
     //eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL3YxL2xvZ2luIiwiaWF0IjoxNzQ2NDc1OTY1LCJleHAiOjE3NDY0Nzk1NjUsIm5iZiI6MTc0NjQ3NTk2NSwianRpIjoiQ1hqVDZrb0pzTTg1c3lWQSIsInN1YiI6IjI1IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyJ9.D8T71Z5CTdIszvO0jQgoZ1C52vpShrk5Q0lYLKTHJPo
     public function index(Request $request)
@@ -177,6 +179,24 @@ public function store(ProductRequest $request)
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+
+    public function getProductsByCategory(Category $category){
+
+        $products = $category->products()->get();
+
+               return $products->isEmpty()
+            ? response()->json([
+                'code'=>404,
+                'message' => 'No products found'], 404)
+            :[
+            'code'=>200,
+            'data'=>[
+                'products'=>ProductResource::collection($products),
+            ]] ;
+
+
     }
 
     /**
