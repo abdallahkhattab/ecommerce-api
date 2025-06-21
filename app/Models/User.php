@@ -76,6 +76,7 @@ public function orders(){
         'name',
         'email',
         'password',
+        'status',
     ];
 
     /**

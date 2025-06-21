@@ -16,32 +16,43 @@ class SuperAdminController extends Controller
     /**
      * Display a listing of the users.
      */
-    public function index(Request $request)
-    {
-        try {
-            // Ensure the authenticated user has the super-admin role
-            $user = Auth::user();
-            if (!$user || !$user->hasRole('super-admin')) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-    
-            // Get search query from request
-            $search = $request->query('search');
-    
-            // Fetch users with optional search functionality
-            $users = User::with('roles')
-                ->when($search, function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                          ->orWhere('email', 'like', "%{$search}%");
-                })
-                ->paginate(10);
-    
-            return response()->json(['data' => UserResource::collection($users)], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+public function index(Request $request)
+{
+    try {
+        // Ensure the authenticated user has the super-admin or admin role
+        $user = Auth::user();
+        if (!$user || (!$user->hasAnyRole(['admin', 'super-admin']))) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+        // Get search query from request
+        $search = $request->query('search');
+
+        // Build the user query with optional search
+        $query = User::with('roles');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->get();
+
+        return response()->json([
+            'data' => UserResource::collection($users)
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred',
+            'error' => $e->getMessage()
+        ], 500);
     }
-    
+}
+
+
 
     /**
      * Store a newly created user.
@@ -51,9 +62,9 @@ class SuperAdminController extends Controller
         try {
             // Ensure the authenticated user has the super-admin role
             $authUser = Auth::user();
-            if (!$authUser || !$authUser->hasRole('super-admin')) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+              if (!$authUser || (!$authUser->hasRole('admin') && !$authUser->hasRole('super-admin'))) {
+    return response()->json(['message' => 'Unauthorized'], 403);
+    }
 
             // Validate the request data
             $data = $request->validate([
@@ -61,6 +72,7 @@ class SuperAdminController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6|confirmed', // Requires password confirmation
                 'role' => ['required', Rule::in(['admin', 'editor', 'seller'])], // Restrict allowed roles
+                'status'=> 'nullable'
             ]);
 
             // Hash the password
@@ -115,9 +127,10 @@ class SuperAdminController extends Controller
     {
         try {
             $authUser = Auth::user();
-            if (!$authUser || !$authUser->hasRole('super-admin')) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+            if (!$authUser || (!$authUser->hasRole('admin') && !$authUser->hasRole('super-admin'))) {
+    return response()->json(['message' => 'Unauthorized'], 403);
+}
+
     
             // Find the user
             $user = User::find($id);
@@ -168,9 +181,9 @@ class SuperAdminController extends Controller
     {
         try {
             $authUser = Auth::user();
-            if (!$authUser || !$authUser->hasRole('super-admin')) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+          if (!$authUser || (!$authUser->hasRole('admin') && !$authUser->hasRole('super-admin'))) {
+    return response()->json(['message' => 'Unauthorized'], 403);
+}
 
             // Find the user
             $user = User::find($id);
@@ -186,4 +199,32 @@ class SuperAdminController extends Controller
             return response()->json(['message' => 'Failed to delete user', 'error' => $e->getMessage()], 500);
         }
     }
+
+
+  public function changeUserStatus(Request $request, User $user)
+{
+    $authUser = Auth::user();
+
+    // Check if user is authenticated and has required role
+    if (!$authUser || !$authUser->hasAnyRole(['admin', 'super-admin'])) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    // Validate the status input
+    $request->validate([
+        'status' => 'required|in:active,inactive',
+    ]);
+
+    // Update the user's status
+    $user->update([
+        'status' => $request->status,
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Status updated successfully',
+       'user' => new UserResource($user),
+    ]);
+}
+
 }

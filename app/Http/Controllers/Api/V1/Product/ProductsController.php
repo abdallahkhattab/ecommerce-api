@@ -9,6 +9,7 @@ use App\Services\ImageService;
 use App\Http\Controllers\Controller;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
@@ -66,8 +67,13 @@ class ProductsController extends Controller
         // Return response
         return $products->isEmpty()
             ? response()->json([
-                'code'=>404,
-                'message' => 'No products found'], 404)
+                'code'=>200,
+                'message' => 'No products found',
+                'data'=> [
+                'products'=>ProductResource::collection($products),
+
+                ],
+                ], 200)
             :[
             'code'=>200,
             'data'=>[
@@ -147,55 +153,76 @@ public function store(ProductRequest $request)
      *The Product Owner:
      *If the user is not an admin but owns the product ($product->user_id === $user->id), they are allowed to update it.
      */
-    public function update(ProductRequest $request, Product $product)
-    {
-        try {
-            // Ensure the seller can only update their own products
-            $user = JWTAuth::user();
+public function update(UpdateProductRequest $request, Product $product) {
+    try {
+        // Debug: Return request data to see what's being sent
+    
+    /*    return response()->json([
+            'debug' => [
+                'all_data' => $request->all(),
+                'files' => $request->allFiles(),
+                'has_name' => $request->has('name'),
+                'name_value' => $request->input('name'),
+                'method' => $request->method(),
+                'content_type' => $request->header('Content-Type'),
+            ]
+        ]);*/
+        
+        // Commented out the actual logic for debugging
+        
+        $data = $request->validated();
+        
+        $user = JWTAuth::user();
+    
+        if (!$user->hasRole('admin') && !$user->hasRole('seller')) {
+    return response()->json(['message' => 'Unauthorized'], 403);
+}
 
-            if ($user && !$user->hasRole(['admin', 'editor']) && $product->user_id !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // Update the product
-            $product->update($request->validated());
-
-            // Handle image update if provided
-            if ($request->hasFile('image')) {
-                if ($product->image) {
-                    Storage::delete('public/' . $product->image); // Delete old image
-                }
-                $product->image = $this->imageService->uploadImage($request->file('image'));
-                $product->save(); // Save the updated image path
-            }
-
-            return response()->json([
-                'message' => 'Product updated successfully',
-                'product' => new ProductResource($product),
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error updating product',
-                'error' => $e->getMessage(),
-            ], 500);
+// Allow admins to edit any product, but sellers only their own
+if ($user->hasRole('seller') && $user->id !== $product->user_id) {
+    return response()->json(['message' => 'You do not own this product.'], 403);
+}
+        
+        $product->update($data);
+        
+        if ($request->hasFile('image')) {
+            $product->image = $this->imageService->uploadImage($request->file('image'));
+            $product->save();
         }
+        
+        return response()->json([
+            'code' => 200,
+            'message' => 'Product updated successfully',
+            'data' => new ProductResource($product),
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error updating product',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
     public function getProductsByCategory(Category $category){
 
         $products = $category->products()->get();
-
+        
                return $products->isEmpty()
             ? response()->json([
-                'code'=>404,
-                'message' => 'No products found'], 404)
+                'code'=>200,
+                'message' => 'No products found' ,
+               'data' =>[
+                'products'=>ProductResource::collection($products),
+               ] 
+              ], 200)
             :[
             'code'=>200,
             'data'=>[
                 'products'=>ProductResource::collection($products),
             ]] ;
-
 
     }
 
@@ -256,7 +283,7 @@ public function store(ProductRequest $request)
         $product = Product::withTrashed()->find($id);
 
         if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+            return response()->json(['message' => 'Product not found'], 200);
         }
 
         // Only sellers can permanently delete their own products
@@ -288,7 +315,7 @@ public function store(ProductRequest $request)
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         if (!$product || !$product->trashed()) {
-            return response()->json(['message' => 'Product not found or not deleted'], 404);
+            return response()->json(['message' => 'Product not found or not deleted'], 200);
         }
 
         $product->restore();

@@ -46,16 +46,17 @@ Route::prefix('front')->group(function(){
 
 
 // Protect routes with authentication middleware
-Route::middleware(['auth:api','role:super-admin'])->prefix('super-admin/users')->group(function () {
+Route::middleware(['auth:api','role:super-admin,admin' , 'active'])->prefix('super-admin/users')->group(function () {
     Route::get('/', [SuperAdminController::class, 'index']);         // List all users
     Route::post('/', [SuperAdminController::class, 'store']);        // Create a new user
     Route::get('/{id}', [SuperAdminController::class, 'show']);     // Get a specific user
     Route::put('/{id}', [SuperAdminController::class, 'update']);   // Update a user
     Route::delete('/{id}', [SuperAdminController::class, 'destroy']);// Delete a user
+    Route::post('status/{user}' , [SuperAdminController::class , 'changeUserStatus']); //change status
 });
 
 // Protected User Routes
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api' , 'active'])->group(function () {
     Route::get('user-profile', [AuthController::class, 'getAuthenticatedUser']);
     Route::post('update-profile/{id}',[ProfileController::class,'update']);
     Route::post('logout', [AuthController::class, 'logout']);
@@ -65,7 +66,7 @@ Route::middleware('auth:api')->group(function () {
 });
 
 // Protected Admin/Editor/Seller Routes
-Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
+Route::middleware(['auth:api', 'role:admin,editor,seller' , 'active'])->group(function () {
     Route::apiResource('brands', BrandsController::class);
     Route::apiResource('categories', CategoriesController::class)->except('update');
     Route::post('categories/update/{category}' , [CategoriesController::class , 'update']);
@@ -76,13 +77,13 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->group(function () {
     Route::get('products/{product}', [ProductsController::class, 'show']);
 
     Route::post('products', [ProductsController::class, 'store']); // Create product
-    Route::put('products/{product}', [ProductsController::class, 'update']); // Update product
+    Route::post('products/update/{product}', [ProductsController::class, 'update']); // Update product
     Route::delete('products/{product}', [ProductsController::class, 'destroy']); // Delete product
 
 });
 
 // Soft delete & restore actions
-Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')->group(function () {
+Route::middleware(['auth:api', 'role:admin,editor,seller' , 'active'])->prefix('products')->group(function () {
     Route::get('deleted', [ProductsController::class, 'deletedProducts']);
     Route::patch('{id}/restore', [ProductsController::class, 'restoreProduct']);
     Route::delete('{id}/force', [ProductsController::class, 'forceDelete']);
@@ -90,7 +91,7 @@ Route::middleware(['auth:api', 'role:admin,editor,seller'])->prefix('products')-
 
 
 //favorite product
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:api' , 'active'])->group(function () {
     Route::post('favorites/{productId}', [FavoriteController::class, 'addToFavorites']);
     Route::delete('favorites/{productId}', [FavoriteController::class, 'removeFromFavorites']);
     Route::get('favorites', [FavoriteController::class, 'getFavorites']);
@@ -98,7 +99,7 @@ Route::middleware(['auth:api'])->group(function () {
 
 // locations
 
-Route::middleware('auth:api')->prefix('locations')->group(function () {
+Route::middleware(['auth:api','active'])->prefix('locations')->group(function () {
     Route::middleware('role:Admin')->group(function () {
         Route::get('/', [LocationsController::class, 'index']); // Admin only
         Route::get('/{location}', [LocationsController::class, 'show']); // Admin only
@@ -111,7 +112,7 @@ Route::middleware('auth:api')->prefix('locations')->group(function () {
 });
 
 
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:api' , 'active'])->group(function () {
     // Users can view their own orders
     Route::get('orders/me', [OrdersController::class, 'index'])->name('orders.index');
 
@@ -126,7 +127,7 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 // Admin/Seller-specific routes
-Route::middleware(['auth:api', 'role:admin,seller,super-admin'])->group(function () {
+Route::middleware(['auth:api', 'role:admin,seller,super-admin' , 'active'])->group(function () {
     // Admins/sellers can view all orders
     Route::get('orders', [OrdersController::class, 'index'])->name('orders.adminIndex');
 
@@ -142,7 +143,7 @@ Route::middleware(['auth:api'])->group(function(){
 });
 
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('auth:api' , 'active')->group(function () {
     Route::post('cart/add', [CartController::class, 'addToCart']);
     Route::delete('cart/remove/{productId}', [CartController::class, 'removeFromCart']);
     Route::get('cart', [CartController::class, 'getCart']);
@@ -152,7 +153,7 @@ Route::middleware('auth:api')->group(function () {
 
 //reviews 
 
-Route::middleware('auth:api')->group(function(){
+Route::middleware(['auth:api' , 'active'])->group(function(){
 Route::post('reviews/product/{id}', [ReviewController::class, 'storeProductReview']);
 //Route::post('reviews/seller/{id}', [ReviewController::class, 'storeSellerReview']);
 Route::get('reviews/product/{id}', [ReviewController::class, 'getProductReviews']);

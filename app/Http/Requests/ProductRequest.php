@@ -31,7 +31,7 @@ class ProductRequest extends FormRequest
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
-            'image' => 'nullable', // Max size: 2MB
+            'image' => 'nullable|image', // Max size: 2MB
             'quantity' => 'required|integer|min:0',
             'description' => 'nullable',
      
